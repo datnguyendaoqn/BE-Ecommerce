@@ -1,21 +1,27 @@
-﻿using DotNetEnv;
-using ECommerceApp.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using BackendEcommerce.Application;
+using BackendEcommerce.Domain;
+using BackendEcommerce.Infrastructure;
+using BackendEcommerce.Infrastructure.Persistence.Data;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
-// load Env
-Env.Load();
-// get env variables
-var user = Env.GetString("ORACLE_USER");
-var password = Env.GetString("ORACLE_PASSWORD");
-var pdb = Env.GetString("ORACLE_PDB");
-var host = Env.GetString("ORACLE_HOST");
-var port = Env.GetString("ORACLE_PORT");
-var service = Env.GetString("ORACLE_SERVICE");
-// Build connection string
-var connectionString = $"User Id={user};Password={password};Data Source={host}:{port}/{service}";
 
-// Add services to the container.
+// 1. Tải file .env VÀO IConfiguration
+// Phải làm điều này ĐẦU TIÊN
+Env.Load();
+builder.Configuration.AddEnvironmentVariables();
+
+// 2. Đăng ký dịch vụ từ các Layer
+builder.Services
+    .AddApplicationServices()
+    .AddDomainServices()
+    .AddInfrastructureServices(builder.Configuration); // Truyền IConfiguration vào
+
+// 3. Đăng ký các dịch vụ của Framework (Controllers, Swagger, CORS)
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -25,36 +31,33 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-// Add DbContext
-builder.Services.AddDbContext<EcomDbContext>(options =>
-    options.UseOracle(connectionString)
-);
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
+// --- Xây dựng App ---
 var app = builder.Build();
-using var scope = app.Services.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<EcomDbContext>();
 
-try
+// --- Các tác vụ khởi động (Ví dụ: DB check) ---
+// (Bạn có thể bỏ logic này vào một hàm private hoặc file khác nếu muốn)
+using (var scope = app.Services.CreateScope())
 {
-    // Kiểm tra kết nối
-    if (db.Database.CanConnect())
+    var db = scope.ServiceProvider.GetRequiredService<EcomDbContext>();
+    try
     {
-        Console.WriteLine("✅ Connected to Oracle DB successfully!");
+        if (db.Database.CanConnect())
+        {
+            Console.WriteLine("✅ Connected to Oracle DB successfully!");
+        }
+        else
+        {
+            Console.WriteLine("❌ Cannot connect to Oracle DB.");
+        }
     }
-    else
+    catch (Exception ex)
     {
-        Console.WriteLine("❌ Cannot connect to Oracle DB.");
+        Console.WriteLine($"❌ Connection failed: {ex.Message}");
     }
 }
-catch (Exception ex)
-{
-    Console.WriteLine($"❌ Connection failed: {ex.Message}");
-}
-// Configure the HTTP request pipeline.
+
+// --- Cấu hình HTTP Request Pipeline ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -63,8 +66,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseAuthorization();
-
+app.UseAuthorization(); // (Lưu ý: Bạn nên thêm UseAuthentication() nếu dùng JWT)
 app.MapControllers();
 
 app.Run();
