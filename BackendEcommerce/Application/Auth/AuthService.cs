@@ -33,15 +33,15 @@ namespace BackendEcommerce.Application.Auth
 
         public async Task<ApiResponseDTO<LoginResponseDTO?>> LoginAsync(LoginRequestDTO dto, string? ipAddress)
         {
-            var account = await _accountRepo.GetByUsernameAsync(dto.Username);
+            var account = await _accountRepo.GetByEmailAsync(dto.Email);
 
-            if (!_userAuth.ValidateCredentials(account, dto.Password))  
+            if (!_userAuth.ValidateCredentials(account, dto.Password))
             {
                 return new ApiResponseDTO<LoginResponseDTO?>
                 {
                     IsSuccess = false,
                     Code = 401,
-                    Message = "Username hoặc password không đúng",
+                    Message = "Email hoặc password không đúng",
                     Data = null
                 };
             }
@@ -66,7 +66,7 @@ namespace BackendEcommerce.Application.Auth
         }
         public async Task<ApiResponseDTO<string>> RequestLoginOtpAsync(RequestLoginDTO obj)
         {
-           return await SendOtpToExistingUserAsync(obj.Email, "Email is invalid.");
+            return await SendOtpToExistingUserAsync(obj.Email, "Email is invalid.");
         }
         public async Task<ApiResponseDTO<string>> RequestRegisterOtpAsync(RequestRegisterOtpDTO dto)
         {
@@ -133,7 +133,7 @@ namespace BackendEcommerce.Application.Auth
 
             // 5. Gọi "Tay chân" (Infra) để lưu
             await _accountRepo.AddAsync(newAccount);
-            await _accountRepo.SaveChangesAsync(); 
+            await _accountRepo.SaveChangesAsync();
 
             // 6. Tự động đăng nhập: Gọi "Não bộ" (Domain) tạo Token
             var accessToken = _tokenManager.GenerateAccessToken(newAccount.Id, newAccount.Username, newUser.Role);
@@ -157,57 +157,57 @@ namespace BackendEcommerce.Application.Auth
                 }
             };
         }
-    private async Task<ApiResponseDTO<string>> SendOtpToExistingUserAsync(string? email, string notFoundMessage)
+        private async Task<ApiResponseDTO<string>> SendOtpToExistingUserAsync(string? email, string notFoundMessage)
+        {
+            // Logic 2: Check user PHẢI TỒN TẠI
+            var account = await _accountRepo.GetByEmailAsync(email);
+            if (account == null)
             {
-                // Logic 2: Check user PHẢI TỒN TẠI
-                var account = await _accountRepo.GetByEmailAsync(email);
-                if (account == null)
+                return new ApiResponseDTO<string>
                 {
-                    return new ApiResponseDTO<string>
-                    {
-                        IsSuccess = false,
-                        Code = 404,
-                        Message = notFoundMessage // Dùng message lỗi phù hợp
-                    };
-                }
-
-                // Gọi "chuyên gia" Domain
-                await _otpGenerator.GenerateAndSendAsync(email);
-
-                return new ApiResponseDTO<string> { IsSuccess = true, Message = "OTP is sended" };
-            }
-            // === THÊM PHƯƠNG THỨC MỚI: Đăng nhập bằng OTP ===
-            public async Task<ApiResponseDTO<LoginResponseDTO?>> LoginWithOtpAsync(LoginWithOtpDTO dto, string? ipAddress)
-            {
-                // 1. Điều phối: Gọi "chuyên gia" Domain để xác thực OTP
-                var isValid = await _otpValidator.VerifyAsync(dto.Email, dto.Otp);
-                if (!isValid)
-                {
-                    return new ApiResponseDTO<LoginResponseDTO?> { IsSuccess=false,Message="Otp is invalid" };
-                }
-
-                // 2. Điều phối: Lấy thông tin user
-                var account = await _accountRepo.GetByEmailAsync(dto.Email);
-
-                // 3. Điều phối: Gọi "chuyên gia" Domain để tạo token (giống hệt LoginAsync)
-                var accessToken = _tokenManager.GenerateAccessToken(account!.Id, account.Username, account.User.Role);
-                var refreshToken = _tokenManager.GenerateRefreshToken(ipAddress);
-
-                account.RefreshTokens.Add(refreshToken);
-                await _accountRepo.SaveChangesAsync();
-
-                // 4. Trả về DTO
-                return new ApiResponseDTO<LoginResponseDTO?>
-                {
-                    IsSuccess = true,
-                    Code = 200,
-                    Message = "Login successfully",
-                    Data = new LoginResponseDTO
-                    {
-                        AccessToken = accessToken,
-                        RefreshToken = refreshToken.Token
-                    }
+                    IsSuccess = false,
+                    Code = 404,
+                    Message = notFoundMessage // Dùng message lỗi phù hợp
                 };
             }
+
+            // Gọi "chuyên gia" Domain
+            await _otpGenerator.GenerateAndSendAsync(email);
+
+            return new ApiResponseDTO<string> { IsSuccess = true, Message = "OTP is sended" };
+        }
+        // === THÊM PHƯƠNG THỨC MỚI: Đăng nhập bằng OTP ===
+        public async Task<ApiResponseDTO<LoginResponseDTO?>> LoginWithOtpAsync(LoginWithOtpDTO dto, string? ipAddress)
+        {
+            // 1. Điều phối: Gọi "chuyên gia" Domain để xác thực OTP
+            var isValid = await _otpValidator.VerifyAsync(dto.Email, dto.Otp);
+            if (!isValid)
+            {
+                return new ApiResponseDTO<LoginResponseDTO?> { IsSuccess = false, Message = "Otp is invalid" };
+            }
+
+            // 2. Điều phối: Lấy thông tin user
+            var account = await _accountRepo.GetByEmailAsync(dto.Email);
+
+            // 3. Điều phối: Gọi "chuyên gia" Domain để tạo token (giống hệt LoginAsync)
+            var accessToken = _tokenManager.GenerateAccessToken(account!.Id, account.Username, account.User.Role);
+            var refreshToken = _tokenManager.GenerateRefreshToken(ipAddress);
+
+            account.RefreshTokens.Add(refreshToken);
+            await _accountRepo.SaveChangesAsync();
+
+            // 4. Trả về DTO
+            return new ApiResponseDTO<LoginResponseDTO?>
+            {
+                IsSuccess = true,
+                Code = 200,
+                Message = "Login successfully",
+                Data = new LoginResponseDTO
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken.Token
+                }
+            };
         }
     }
+}
