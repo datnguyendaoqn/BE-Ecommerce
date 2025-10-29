@@ -2,6 +2,6 @@
 {
     public interface IOtpValidator
     {
-        Task<bool> VerifyAsync(string email, string otp);
+        Task<bool> VerifyAsync(string? email, string? otp);
     }
 }
