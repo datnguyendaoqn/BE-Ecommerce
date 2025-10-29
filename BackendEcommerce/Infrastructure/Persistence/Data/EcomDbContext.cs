@@ -1,7 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Security.Principal;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 
 namespace BackendEcommerce.Infrastructure.Persistence.Data
@@ -30,20 +27,21 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             // ===============================
             // Users
             // ===============================
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("users");
+                entity.ToTable("USERS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Email).HasColumnName("email").IsRequired();
-                entity.Property(e => e.FullName).HasColumnName("full_name");
-                entity.Property(e => e.Phone).HasColumnName("phone");
-                entity.Property(e => e.Role).HasColumnName("role").IsRequired();
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.Email).HasColumnName("EMAIL").IsRequired();
+                entity.Property(e => e.FullName).HasColumnName("FULL_NAME");
+                entity.Property(e => e.Phone).HasColumnName("PHONE");
+                entity.Property(e => e.Role).HasColumnName("ROLE").IsRequired();
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
 
                 entity.HasMany(e => e.Accounts).WithOne(a => a.User).HasForeignKey(a => a.UserId);
                 entity.HasMany(e => e.AddressBooks).WithOne(ab => ab.User).HasForeignKey(ab => ab.UserId);
@@ -52,7 +50,6 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.HasMany(e => e.Reviews).WithOne(r => r.User).HasForeignKey(r => r.UserId);
                 entity.HasMany(e => e.DeliveryReviews).WithOne(dr => dr.User).HasForeignKey(dr => dr.UserId);
                 entity.HasMany(e => e.Carts).WithOne(c => c.User).HasForeignKey(c => c.UserId);
-
             });
 
             // ===============================
@@ -60,16 +57,14 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Account>(entity =>
             {
-                entity.ToTable("accounts");
+                entity.ToTable("ACCOUNTS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Username).HasColumnName("username").IsRequired();
-                entity.Property(e => e.PasswordHash).HasColumnName("passwordhash").IsRequired();
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-
-
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.Username).HasColumnName("USERNAME").IsRequired();
+                entity.Property(e => e.PasswordHash).HasColumnName("PASSWORDHASH").IsRequired();
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -77,19 +72,19 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<AddressBook>(entity =>
             {
-                entity.ToTable("address_book");
+                entity.ToTable("ADDRESS_BOOK");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.FullName).HasColumnName("full_name");
-                entity.Property(e => e.Phone).HasColumnName("phone");
-                entity.Property(e => e.AddressLine).HasColumnName("address_line");
-                entity.Property(e => e.Ward).HasColumnName("ward");
-                entity.Property(e => e.District).HasColumnName("district");
-                entity.Property(e => e.City).HasColumnName("city");
-                entity.Property(e => e.IsDefault).HasColumnName("is_default");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.FullName).HasColumnName("FULL_NAME");
+                entity.Property(e => e.Phone).HasColumnName("PHONE");
+                entity.Property(e => e.AddressLine).HasColumnName("ADDRESS_LINE");
+                entity.Property(e => e.Ward).HasColumnName("WARD");
+                entity.Property(e => e.District).HasColumnName("DISTRICT");
+                entity.Property(e => e.City).HasColumnName("CITY");
+                entity.Property(e => e.IsDefault).HasColumnName("IS_DEFAULT");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -97,16 +92,16 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Shop>(entity =>
             {
-                entity.ToTable("shops");
+                entity.ToTable("SHOPS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.OwnerId).HasColumnName("owner_id");
-                entity.Property(e => e.Name).HasColumnName("name").IsRequired();
-                entity.Property(e => e.Description).HasColumnName("description");
-                entity.Property(e => e.Logo).HasColumnName("logo");
-                entity.Property(e => e.Status).HasColumnName("status");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.OwnerId).HasColumnName("OWNER_ID");
+                entity.Property(e => e.Name).HasColumnName("NAME").IsRequired();
+                entity.Property(e => e.Description).HasColumnName("DESCRIPTION");
+                entity.Property(e => e.Logo).HasColumnName("LOGO");
+                entity.Property(e => e.Status).HasColumnName("STATUS");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
 
                 entity.HasMany(s => s.Products).WithOne(p => p.Shop).HasForeignKey(p => p.ShopId);
             });
@@ -116,14 +111,14 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Category>(entity =>
             {
-                entity.ToTable("categories");
+                entity.ToTable("CATEGORIES");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Name).HasColumnName("name").IsRequired();
-                entity.Property(e => e.Description).HasColumnName("description");
-                entity.Property(e => e.ParentId).HasColumnName("parent_id");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.Name).HasColumnName("NAME").IsRequired();
+                entity.Property(e => e.Description).HasColumnName("DESCRIPTION");
+                entity.Property(e => e.ParentId).HasColumnName("PARENT_ID");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
 
                 entity.HasMany(c => c.Products).WithOne(p => p.Category).HasForeignKey(p => p.CategoryId);
             });
@@ -133,17 +128,17 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Product>(entity =>
             {
-                entity.ToTable("products");
+                entity.ToTable("PRODUCTS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.ShopId).HasColumnName("shop_id");
-                entity.Property(e => e.CategoryId).HasColumnName("category_id");
-                entity.Property(e => e.Name).HasColumnName("name").IsRequired();
-                entity.Property(e => e.Description).HasColumnName("description");
-                entity.Property(e => e.Brand).HasColumnName("brand");
-                entity.Property(e => e.Status).HasColumnName("status");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.ShopId).HasColumnName("SHOP_ID");
+                entity.Property(e => e.CategoryId).HasColumnName("CATEGORY_ID");
+                entity.Property(e => e.Name).HasColumnName("NAME").IsRequired();
+                entity.Property(e => e.Description).HasColumnName("DESCRIPTION");
+                entity.Property(e => e.Brand).HasColumnName("BRAND");
+                entity.Property(e => e.Status).HasColumnName("STATUS");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -151,18 +146,18 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<ProductVariant>(entity =>
             {
-                entity.ToTable("product_variants");
+                entity.ToTable("PRODUCT_VARIANTS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.ProductId).HasColumnName("product_id");
-                entity.Property(e => e.SKU).HasColumnName("sku").IsRequired();
-                entity.Property(e => e.VariantSize).HasColumnName("variant_size");
-                entity.Property(e => e.Color).HasColumnName("color");
-                entity.Property(e => e.Material).HasColumnName("material");
-                entity.Property(e => e.Price).HasColumnName("price").HasPrecision(12,2);
-                entity.Property(e => e.Quantity).HasColumnName("quantity");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.ProductId).HasColumnName("PRODUCT_ID");
+                entity.Property(e => e.SKU).HasColumnName("SKU").IsRequired();
+                entity.Property(e => e.VariantSize).HasColumnName("VARIANT_SIZE");
+                entity.Property(e => e.Color).HasColumnName("COLOR");
+                entity.Property(e => e.Material).HasColumnName("MATERIAL");
+                entity.Property(e => e.Price).HasColumnName("PRICE").HasPrecision(12, 2);
+                entity.Property(e => e.Quantity).HasColumnName("QUANTITY");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -170,16 +165,16 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Media>(entity =>
             {
-                entity.ToTable("media");
+                entity.ToTable("MEDIA");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.EntityType).HasColumnName("entity_type");
-                entity.Property(e => e.EntityId).HasColumnName("entity_id");
-                entity.Property(e => e.ImageUrl).HasColumnName("image_url");
-                entity.Property(e => e.PublicId).HasColumnName("public_id");
-                entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
-                entity.Property(e => e.AltText).HasColumnName("alt_text");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.EntityType).HasColumnName("ENTITY_TYPE");
+                entity.Property(e => e.EntityId).HasColumnName("ENTITY_ID");
+                entity.Property(e => e.ImageUrl).HasColumnName("IMAGE_URL");
+                entity.Property(e => e.PublicId).HasColumnName("PUBLIC_ID");
+                entity.Property(e => e.IsPrimary).HasColumnName("IS_PRIMARY");
+                entity.Property(e => e.AltText).HasColumnName("ALT_TEXT");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
             });
 
             // ===============================
@@ -187,32 +182,29 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Cart>(entity =>
             {
-                entity.ToTable("carts");
+                entity.ToTable("CARTS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
 
                 entity.HasMany(c => c.CartItems).WithOne(ci => ci.Cart).HasForeignKey(ci => ci.CartId);
             });
 
             // ===============================
             // CartItems
-            // =================
-            // ===============================
-            // CartItems
             // ===============================
             modelBuilder.Entity<CartItem>(entity =>
             {
-                entity.ToTable("cart_items");
+                entity.ToTable("CART_ITEMS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.CartId).HasColumnName("cart_id");
-                entity.Property(e => e.VariantId).HasColumnName("variant_id");
-                entity.Property(e => e.Quantity).HasColumnName("quantity");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.CartId).HasColumnName("CART_ID");
+                entity.Property(e => e.VariantId).HasColumnName("VARIANT_ID");
+                entity.Property(e => e.Quantity).HasColumnName("QUANTITY");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -220,15 +212,15 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Order>(entity =>
             {
-                entity.ToTable("orders");
+                entity.ToTable("ORDERS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.Status).HasColumnName("status");
-                entity.Property(e => e.Total).HasColumnName("total").HasPrecision(12, 2);
-                entity.Property(e => e.ShippingAddressId).HasColumnName("shipping_address_id");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.Status).HasColumnName("STATUS");
+                entity.Property(e => e.Total).HasColumnName("TOTAL").HasPrecision(12, 2);
+                entity.Property(e => e.ShippingAddressId).HasColumnName("SHIPPING_ADDRESS_ID");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
 
                 entity.HasMany(o => o.OrderItems).WithOne(oi => oi.Order).HasForeignKey(oi => oi.OrderId);
                 entity.HasMany(o => o.Payments).WithOne(p => p.Order).HasForeignKey(p => p.OrderId);
@@ -240,17 +232,17 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Payment>(entity =>
             {
-                entity.ToTable("payments");
+                entity.ToTable("PAYMENTS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.OrderId).HasColumnName("order_id");
-                entity.Property(e => e.Method).HasColumnName("method").IsRequired();
-                entity.Property(e => e.Status).HasColumnName("status");
-                entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
-                entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(12, 2);
-                entity.Property(e => e.PaidAt).HasColumnName("paid_at");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.OrderId).HasColumnName("ORDER_ID");
+                entity.Property(e => e.Method).HasColumnName("METHOD").IsRequired();
+                entity.Property(e => e.Status).HasColumnName("STATUS");
+                entity.Property(e => e.TransactionId).HasColumnName("TRANSACTION_ID");
+                entity.Property(e => e.Amount).HasColumnName("AMOUNT").HasPrecision(12, 2);
+                entity.Property(e => e.PaidAt).HasColumnName("PAID_AT");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -258,15 +250,15 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<OrderItem>(entity =>
             {
-                entity.ToTable("order_items");
+                entity.ToTable("ORDER_ITEMS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.OrderId).HasColumnName("order_id");
-                entity.Property(e => e.VariantId).HasColumnName("variant_id");
-                entity.Property(e => e.Quantity).HasColumnName("quantity");
-                entity.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(12, 2);
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.OrderId).HasColumnName("ORDER_ID");
+                entity.Property(e => e.VariantId).HasColumnName("VARIANT_ID");
+                entity.Property(e => e.Quantity).HasColumnName("QUANTITY");
+                entity.Property(e => e.UnitPrice).HasColumnName("UNIT_PRICE").HasPrecision(12, 2);
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -274,15 +266,15 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<Review>(entity =>
             {
-                entity.ToTable("reviews");
+                entity.ToTable("REVIEWS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.VariantId).HasColumnName("variant_id");
-                entity.Property(e => e.Rating).HasColumnName("rating").HasPrecision(2,1);
-                entity.Property(e => e.CommentText).HasColumnName("comment_text");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.VariantId).HasColumnName("VARIANT_ID");
+                entity.Property(e => e.Rating).HasColumnName("RATING").HasPrecision(2, 1);
+                entity.Property(e => e.CommentText).HasColumnName("COMMENT_TEXT");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
             // ===============================
@@ -290,40 +282,38 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             modelBuilder.Entity<DeliveryReview>(entity =>
             {
-                entity.ToTable("delivery_reviews");
+                entity.ToTable("DELIVERY_REVIEWS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.OrderId).HasColumnName("order_id");
-                entity.Property(e => e.Rating).HasColumnName("rating").HasPrecision(2,1);
-                entity.Property(e => e.CommentText).HasColumnName("comment_text");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            }); 
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.UserId).HasColumnName("USER_ID");
+                entity.Property(e => e.OrderId).HasColumnName("ORDER_ID");
+                entity.Property(e => e.Rating).HasColumnName("RATING").HasPrecision(2, 1);
+                entity.Property(e => e.CommentText).HasColumnName("COMMENT_TEXT");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+            });
+
             // ===============================
             // RefreshTokens
             // ===============================
             modelBuilder.Entity<RefreshToken>(entity =>
             {
-                entity.ToTable("refresh_tokens");
-
+                entity.ToTable("REFRESH_TOKENS");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.AccountId).HasColumnName("account_id");
-                entity.Property(e => e.Token).HasColumnName("token");
-                entity.Property(e => e.Expires).HasColumnName("expires");
-                entity.Property(e => e.RevokedValue).HasColumnName("revoked");
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.CreatedByIp).HasColumnName("created_by_ip");
-                entity.Property(e => e.RevokedAt).HasColumnName("revoked_at");
-               
+                entity.Property(e => e.Id).HasColumnName("ID");
+                entity.Property(e => e.AccountId).HasColumnName("ACCOUNT_ID");
+                entity.Property(e => e.Token).HasColumnName("TOKEN");
+                entity.Property(e => e.Expires).HasColumnName("EXPIRES");
+                entity.Property(e => e.RevokedValue).HasColumnName("REVOKED");
+                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
+                entity.Property(e => e.CreatedByIp).HasColumnName("CREATED_BY_IP");
+                entity.Property(e => e.RevokedAt).HasColumnName("REVOKED_AT");
 
                 entity.HasOne(e => e.Account)
-                    .WithMany(r=>r.RefreshTokens)
+                    .WithMany(r => r.RefreshTokens)
                     .HasForeignKey(e => e.AccountId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
 }
-
