@@ -46,7 +46,7 @@ namespace BackendEcommerce.Application.Auth
                 };
             }
 
-            var accessToken = _tokenManager.GenerateAccessToken(account.Id, account.Username, account.User.Role);
+            var accessToken = _tokenManager.GenerateAccessToken(account!.Id, account.Username, account.User.Role);
             var refreshToken = _tokenManager.GenerateRefreshToken(ipAddress);
 
             account.RefreshTokens.Add(refreshToken);
@@ -157,7 +157,7 @@ namespace BackendEcommerce.Application.Auth
                 }
             };
         }
-    private async Task<ApiResponseDTO<string>> SendOtpToExistingUserAsync(string email, string notFoundMessage)
+    private async Task<ApiResponseDTO<string>> SendOtpToExistingUserAsync(string? email, string notFoundMessage)
             {
                 // Logic 2: Check user PHẢI TỒN TẠI
                 var account = await _accountRepo.GetByEmailAsync(email);
@@ -190,7 +190,7 @@ namespace BackendEcommerce.Application.Auth
                 var account = await _accountRepo.GetByEmailAsync(dto.Email);
 
                 // 3. Điều phối: Gọi "chuyên gia" Domain để tạo token (giống hệt LoginAsync)
-                var accessToken = _tokenManager.GenerateAccessToken(account.Id, account.Username, account.User.Role);
+                var accessToken = _tokenManager.GenerateAccessToken(account!.Id, account.Username, account.User.Role);
                 var refreshToken = _tokenManager.GenerateRefreshToken(ipAddress);
 
                 account.RefreshTokens.Add(refreshToken);

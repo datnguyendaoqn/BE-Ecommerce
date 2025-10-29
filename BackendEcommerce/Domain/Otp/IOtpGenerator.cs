@@ -4,7 +4,7 @@ namespace BackendEcommerce.Domain.Otp
 {
     public interface IOtpGenerator
     {
-        Task GenerateAndSendAsync(string email);
+        Task GenerateAndSendAsync(string? email);
     }
 }
     

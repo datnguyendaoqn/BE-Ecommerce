@@ -6,7 +6,7 @@ namespace BackendEcommerce.Domain.Contracts.Persistence
     {
         Task<Account?> GetByUsernameAsync(string username);
         Task SaveChangesAsync();
-        Task<Account?> GetByEmailAsync(string email);
+        Task<Account?> GetByEmailAsync(string? email);
         Task AddAsync(Account account);
     }
 }
