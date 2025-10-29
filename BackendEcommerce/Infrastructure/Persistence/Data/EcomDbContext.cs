@@ -309,6 +309,9 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.CreatedByIp).HasColumnName("CREATED_BY_IP");
                 entity.Property(e => e.RevokedAt).HasColumnName("REVOKED_AT");
                 entity.Property(e => e.RevokedByIp).HasColumnName("REVOKED_BY_IP");
+                entity.Ignore(e => e.Revoked);
+                entity.Ignore(e => e.IsExpired);
+                entity.Ignore(e => e.IsActive);
 
                 entity.HasOne(e => e.Account)
                     .WithMany(r => r.RefreshTokens)
