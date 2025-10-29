@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -21,14 +21,6 @@
     <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="DTOs\Accounts\" />
-    <Folder Include="DTOs\Auth\" />
-    <Folder Include="DTOs\Email\" />
-    <Folder Include="DTOs\Otp\" />
-    <Folder Include="DTOs\Products\" />
   </ItemGroup>
 	<ItemGroup>
 		<None Update="Infrastructure\Email\Templates\OtpEmailTemplate.html">
