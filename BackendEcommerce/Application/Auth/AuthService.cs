@@ -59,6 +59,9 @@ namespace BackendEcommerce.Application.Auth
                 Message = "Login successfully",
                 Data = new LoginResponseDTO
                 {
+                    ID = account.Id.ToString(),
+                    FullName= account.User.FullName,
+                    Role= account.User.Role,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken.Token
                 }
