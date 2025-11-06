@@ -42,7 +42,34 @@ namespace BackendEcommerce.Application.Products
                     Message = "Người dùng không phải là seller"
                 };
             }
+            // 1. Check trùng SKU (SKU bị trùng ngay trong DTO gửi lên)
+            var duplicateSkus = dto.Variants
+                .GroupBy(v => v.SKU)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key);
 
+            if (duplicateSkus.Any())
+            {
+                return new ApiResponseDTO<ProductResponseDto>
+                {
+                    IsSuccess = false,
+                    Code = 400,
+                    Message = $"Các SKU bị trùng lặp trong request: {string.Join(", ", duplicateSkus)}"
+                };
+            }
+
+            // 2. Check CategoryId có tồn tại không
+            // (Giả định ICategoryRepository có hàm GetByIdAsync)
+            var category = await _categoryRepo.GetByIdAsync(dto.CategoryId);
+            if (category == null)
+            {
+                return new ApiResponseDTO<ProductResponseDto>
+                {
+                    IsSuccess = false,
+                    Code = 400,
+                    Message = $"CategoryId '{dto.CategoryId}' không tồn tại."
+                };
+            }
             // Dùng để rollback Cloudinary
             var uploadedMediaResults = new List<MediaUploadResult>();
             // Dùng để lưu vào DB
@@ -77,7 +104,7 @@ namespace BackendEcommerce.Application.Products
                             // EntityId sẽ được gán sau khi SaveChanges() Product
                             ImageUrl = uploadResult.Url,
                             PublicId = uploadResult.PublicId,
-                            IsPrimary = false,
+                            IsPrimary = true,
                             CreatedAt = DateTime.UtcNow
                         });
                 }
@@ -189,6 +216,50 @@ namespace BackendEcommerce.Application.Products
                 };
             }
         }
+        //
+        //
+        public async Task<ApiResponseDTO<List<ProductSummaryDto>>> GetProductsForSellerAsync(int sellerId)
+        {
+            // 1. Phân quyền: Check xem user này có shop không
+            var shop = await _shopRepo.GetByOwnerIdAsync(sellerId);
+            if (shop == null)
+            {
+                return new ApiResponseDTO<List<ProductSummaryDto>>
+                {
+                    IsSuccess = false,
+                    Code = 403,
+                    Message = "Người dùng không phải là seller"
+                };
+            }
+
+            // 2. Lấy dữ liệu Product (đã tối ưu)
+            var products = await _productRepo.GetProductsByShopIdAsync(shop.Id);
+            if (!products.Any())
+            {
+                // Trả về danh sách rỗng (vẫn là Success)
+                return new ApiResponseDTO<List<ProductSummaryDto>> { IsSuccess = true, Data = new List<ProductSummaryDto>() };
+            }
+
+            var productIds = products.Select(p => p.Id).ToList();
+
+            // 3. Lấy ảnh đại diện (Chạy 1 query duy nhất)
+            var primaryImages = await _mediaRepo.GetPrimaryMediaForEntitiesAsync(productIds, "product");
+
+            // 4. Map (ánh xạ) sang DTO
+            var dtos = products.Select(p => new ProductSummaryDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                MinPrice = p.MinPrice,
+                VariantCount = p.VariantCount,
+                Status = p.Status,
+                // Lấy ảnh từ Dictionary, nếu không có thì trả về null
+                PrimaryImageUrl = primaryImages.GetValueOrDefault(p.Id, null)
+            }).ToList();
+
+            return new ApiResponseDTO<List<ProductSummaryDto>> { IsSuccess = true, Data = dtos };
+        }
     }
 }
+
 

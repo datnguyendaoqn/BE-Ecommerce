@@ -54,5 +54,32 @@ namespace BackendEcommerce.Presentation.Controllers
 
             return Ok(response);
         }
+        //
+        [HttpGet("my-shop")]
+        [Authorize(Roles = "seller")]
+        [ProducesResponseType(typeof(ApiResponseDTO<List<ProductSummaryDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseDTO<List<ProductSummaryDto>>), 403)]
+        [ProducesResponseType(typeof(ApiResponseDTO<List<ProductSummaryDto>>), 401)]
+        public async Task<ActionResult<ApiResponseDTO<List<ProductSummaryDto>>>> GetMyProducts()
+        {
+            // 1. Lấy SellerId từ Token (đã xác thực)
+            var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sellerIdString, out var sellerId))
+            {
+                return Unauthorized(new ApiResponseDTO<List<ProductSummaryDto>> { IsSuccess = false, Code = 401, Message = "User không hợp lệ." });
+            }
+
+            // 2. Giao việc cho "Quản lý"
+            var response = await _productService.GetProductsForSellerAsync(sellerId);
+
+            // 3. Trả kết quả
+            if (!response.IsSuccess)
+            {
+                // Chỉ có thể là lỗi 403 (Không phải seller)
+                return StatusCode(403, response);
+            }
+
+            return Ok(response);
+        }
     }
 }
