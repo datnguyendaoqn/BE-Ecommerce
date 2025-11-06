@@ -10,6 +10,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
         public string Status { get; set; } = "pending";
         public decimal? Total { get; set; }
         public int? ShippingAddressId { get; set; }
+        public string? CancellationReason { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public User User { get; set; } = null!;

@@ -3,6 +3,7 @@ using BackendEcommerce.Domain;
 using BackendEcommerce.Infrastructure;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using DotNetEnv;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +21,6 @@ builder.Services
 // 3. Đăng ký các dịch vụ của Framework (Controllers, Swagger, CORS)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -29,6 +28,36 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
+    });
+});
+//Thêm Bearer cho Swagger 
+builder.Services.AddSwaggerGen(options =>
+{
+    // 1. Thêm định nghĩa bảo mật (Security Definition)
+    // Chúng ta định nghĩa một "khóa" tên là "Bearer"
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Nhập JWT token của bạn vào đây. \n\nVí dụ: '12345abcde' (Swagger sẽ tự thêm 'Bearer ')",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http, 
+        Scheme = "Bearer", // <-- Tên của lược đồ
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer" // Phải khớp với tên ở AddSecurityDefinition
+                }
+            },
+            new string[] {}
+        }
     });
 });
 
@@ -56,6 +85,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"❌ Connection failed: {ex.Message}");
     }
 }
+//
 
 // --- Cấu hình HTTP Request Pipeline ---
 if (app.Environment.IsDevelopment())
@@ -66,7 +96,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseAuthorization(); // (Lưu ý: Bạn nên thêm UseAuthentication() nếu dùng JWT)
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

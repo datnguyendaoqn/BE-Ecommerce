@@ -4,7 +4,7 @@ using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 
-namespace BackendEcommerce.Infrastructure.Persistence.Repositories.Accounts
+namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 {
     public class AccountRepository : IAccountRepository
     {

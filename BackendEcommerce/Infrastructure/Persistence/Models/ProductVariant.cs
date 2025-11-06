@@ -20,6 +20,5 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
-        public ICollection<Media> Media { get; set; } = new List<Media>();
     }
 }

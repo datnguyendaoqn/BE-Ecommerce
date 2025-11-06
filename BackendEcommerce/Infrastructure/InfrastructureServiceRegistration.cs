@@ -1,16 +1,21 @@
 ﻿using BackendEcommerce.Domain.Contracts.Caching;
 using BackendEcommerce.Domain.Contracts.Email;
 using BackendEcommerce.Domain.Contracts.Persistence;
+using BackendEcommerce.Domain.Contracts.Services;
 using BackendEcommerce.Infrastructure.Caching.Redis;
 using BackendEcommerce.Infrastructure.Email;
+using BackendEcommerce.Infrastructure.Medias;
 using BackendEcommerce.Infrastructure.Persistence.Data;
-using BackendEcommerce.Infrastructure.Persistence.Repositories.Accounts;
+using BackendEcommerce.Infrastructure.Persistence.Repositories;
 using BackendEcommerce.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Resend;
 using StackExchange.Redis;
+using System.Text;
 
 namespace BackendEcommerce.Infrastructure
 {
@@ -38,6 +43,12 @@ namespace BackendEcommerce.Infrastructure
 
             // Đăng ký Repositories
             services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IShopRepository, ShopRepository>();
+            services.AddScoped<IMediaRepository, MediaRepository>();
+            services.AddScoped<IMediaUploadService, CloudinaryMediaService>();
+
+            // (Và cấu hình Cloudinary Account từ IConfiguration...)
 
             // 2. Cấu hình Caching (Redis)
             var redisConnectionString = configuration["REDIS_CONNECTION"];
@@ -64,7 +75,22 @@ namespace BackendEcommerce.Infrastructure
 
             services.AddSingleton(new JwtHelper(jwtKey));
 
+            //5. JWT
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    // This is the logic from your JwtHelper!
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true, // Checks if expired
+                    ValidateIssuerSigningKey = true, // Checks the signature
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT_KEY"]))
+                };
+            });
             return services;
+
         }
     }
 }
