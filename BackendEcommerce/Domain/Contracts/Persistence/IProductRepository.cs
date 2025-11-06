@@ -7,5 +7,7 @@ namespace BackendEcommerce.Domain.Contracts.Persistence
         Task AddAsync(Product product);
         Task SaveChangesAsync();
         // (We will add Get/Update/Delete methods here later)
+        Task<IEnumerable<Product>> GetProductsByShopIdAsync(int shopId);
     }
+
 }

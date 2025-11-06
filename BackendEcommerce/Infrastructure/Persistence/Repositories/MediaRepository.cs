@@ -1,6 +1,7 @@
 ﻿using BackendEcommerce.Domain.Contracts.Persistence;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
+using Microsoft.EntityFrameworkCore;
 namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 {
     public class MediaRepository : IMediaRepository
@@ -20,6 +21,23 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+        public async Task<Dictionary<int, string>> GetPrimaryMediaForEntitiesAsync(IEnumerable<int> entityIds, string entityType)
+        {
+            // Chạy 1 query duy nhất để lấy tất cả ảnh chính
+            // Đây là giải pháp "Production-Ready" để chống N+1 Query
+            return await _context.Media
+                .Where(m => m.EntityId.HasValue &&
+                            entityIds.Contains(m.EntityId.Value) &&
+                            m.EntityType == entityType &&
+                            m.IsPrimary) // Chỉ lấy ảnh chính
+                .GroupBy(m => m.EntityId.Value) // Nhóm theo ProductId
+                .Select(g => new {
+                    EntityId = g.Key,
+                    // Lấy ảnh đầu tiên (vì có thể có nhiều ảnh IsPrimary, dù không nên)
+                    ImageUrl = g.First().ImageUrl
+                })
+                .ToDictionaryAsync(k => k.EntityId, v => v.ImageUrl!);
         }
     }
 }

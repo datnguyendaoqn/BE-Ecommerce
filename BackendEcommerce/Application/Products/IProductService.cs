@@ -7,5 +7,6 @@ namespace BackendEcommerce.Application.Products
     {
         // We get the DTO and the Seller's ID (from JWT)
         Task<ApiResponseDTO<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto dto, int sellerId);
+        Task<ApiResponseDTO<List<ProductSummaryDto>>> GetProductsForSellerAsync(int sellerId);
     }
 }
