@@ -13,11 +13,12 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
         public string? Description { get; set; }
         public string? Brand { get; set; }
         public string Status { get; set; } = "active";
+        public int VariantCount { get; set; }
+        public decimal MinPrice { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public Shop Shop { get; set; } = null!;
         public Category Category { get; set; } = null!;
         public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
-        public ICollection<Media> Media { get; set; } = new List<Media>();
     }
 }

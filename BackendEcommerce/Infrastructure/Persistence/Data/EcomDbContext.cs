@@ -98,10 +98,12 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.OwnerId).HasColumnName("OWNER_ID");
                 entity.Property(e => e.Name).HasColumnName("NAME").IsRequired();
                 entity.Property(e => e.Description).HasColumnName("DESCRIPTION");
-                entity.Property(e => e.Logo).HasColumnName("LOGO");
                 entity.Property(e => e.Status).HasColumnName("STATUS");
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                entity.Property(s => s.CccdStatus).HasColumnName("CCCD_STATUS").IsRequired();
+                entity.Property(s => s.BankStatus).HasColumnName("BANK_STATUS").IsRequired();
+                entity.Property(s => s.BankAccountNumber).HasColumnName("BANK_ACCOUNT_NUMBER");
 
                 entity.HasMany(s => s.Products).WithOne(p => p.Shop).HasForeignKey(p => p.ShopId);
             });
@@ -139,6 +141,8 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.Status).HasColumnName("STATUS");
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                entity.Property(e => e.VariantCount).HasColumnName("VARIANT_COUNT");
+                entity.Property(e => e.MinPrice).HasColumnName("MIN_PRICE").HasPrecision(12, 2);
             });
 
             // ===============================
@@ -221,7 +225,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.ShippingAddressId).HasColumnName("SHIPPING_ADDRESS_ID");
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
-
+                entity.Property(o => o.CancellationReason).HasColumnName("CANCELLATION_REASON");
                 entity.HasMany(o => o.OrderItems).WithOne(oi => oi.Order).HasForeignKey(oi => oi.OrderId);
                 entity.HasMany(o => o.Payments).WithOne(p => p.Order).HasForeignKey(p => p.OrderId);
                 entity.HasMany(o => o.DeliveryReviews).WithOne(dr => dr.Order).HasForeignKey(dr => dr.OrderId);
@@ -275,6 +279,12 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.CommentText).HasColumnName("COMMENT_TEXT");
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                entity.HasOne(r => r.OrderItem)
+                 .WithMany() // Assuming OrderItem does not need a collection of Reviews
+                 .HasForeignKey(r => r.OrderItemId)
+                 .IsRequired();
+                entity.HasIndex(r => r.OrderItemId)
+                  .IsUnique();
             });
 
             // ===============================

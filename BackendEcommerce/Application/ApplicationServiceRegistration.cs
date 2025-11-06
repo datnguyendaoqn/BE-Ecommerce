@@ -1,6 +1,13 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-// Nhớ using các thư mục con của Application
+﻿// Nhớ using các thư mục con của Application
 using BackendEcommerce.Application.Auth;
+using BackendEcommerce.Application.Products;
+using BackendEcommerce.Domain.Contracts.Persistence;
+using BackendEcommerce.Domain.Contracts.Services;
+using BackendEcommerce.Infrastructure;
+using BackendEcommerce.Infrastructure.Medias;
+using BackendEcommerce.Infrastructure.Persistence.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace BackendEcommerce.Application
 {
@@ -9,13 +16,8 @@ namespace BackendEcommerce.Application
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             // Đăng ký tất cả "Quản lý" (Use Case) ở đây
-
-            // Từ /Application/Auth
             services.AddScoped<IAuthService, AuthService>();
-
-            // Từ /Application/Products (Khi nào bạn tạo)
-            // services.AddScoped<IProductService, ProductService>();
-
+            services.AddScoped<IProductService, ProductService>();
             return services;
         }
     }
