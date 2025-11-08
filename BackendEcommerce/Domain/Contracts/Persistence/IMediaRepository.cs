@@ -7,5 +7,7 @@ namespace BackendEcommerce.Domain.Contracts.Persistence
         Task AddRangeAsync(IEnumerable<Media> MediaItems);
         Task SaveChangesAsync();
         Task<Dictionary<int, string>> GetPrimaryMediaForEntitiesAsync(IEnumerable<int> entityIds, string entityType);
+        Task<IReadOnlyList<Media>> GetMediaForEntityAsync(int entityId, string entityType);
+        Task<Dictionary<int, Media>> GetPrimaryMediaForEntitiesMapAsync(IEnumerable<int> entityIds, string entityType);
     }
 }

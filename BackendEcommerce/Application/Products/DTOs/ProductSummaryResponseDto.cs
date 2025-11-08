@@ -1,6 +1,6 @@
 ﻿namespace BackendEcommerce.Application.Products.DTOs
 {
-    public class ProductSummaryDto
+    public class ProductSummaryResponseDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
@@ -10,5 +10,10 @@
         public int VariantCount { get; set; }
 
         public string Status { get; set; } = "active";
+      
+        public int CategoryId { get; set; }
+
+        
+        public string CategoryName { get; set; } = string.Empty;
     }
 }

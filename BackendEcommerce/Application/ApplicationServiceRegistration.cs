@@ -1,6 +1,8 @@
 ﻿// Nhớ using các thư mục con của Application
 using BackendEcommerce.Application.Auth;
+using BackendEcommerce.Application.Categories;
 using BackendEcommerce.Application.Products;
+using BackendEcommerce.Application.Reviews;
 using BackendEcommerce.Domain.Contracts.Persistence;
 using BackendEcommerce.Domain.Contracts.Services;
 using BackendEcommerce.Infrastructure;
@@ -18,6 +20,8 @@ namespace BackendEcommerce.Application
             // Đăng ký tất cả "Quản lý" (Use Case) ở đây
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IReviewService, ReviewService>();
             return services;
         }
     }

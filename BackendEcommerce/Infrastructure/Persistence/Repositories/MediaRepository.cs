@@ -39,5 +39,26 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 })
                 .ToDictionaryAsync(k => k.EntityId, v => v.ImageUrl!);
         }
+        public async Task<IReadOnlyList<Media>> GetMediaForEntityAsync(int entityId, string entityType)
+        {
+            return await _context.Media
+                .Where(m => m.EntityId == entityId && m.EntityType == entityType)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<int, Media>> GetPrimaryMediaForEntitiesMapAsync(IEnumerable<int> entityIds, string entityType)
+        {
+            // Gần giống hàm GetPrimaryMediaForEntitiesAsync,
+            // nhưng trả về nguyên object Media
+            return await _context.Media
+                .Where(m => m.EntityId.HasValue &&
+                            entityIds.Contains(m.EntityId.Value) &&
+                            m.EntityType == entityType &&
+                            m.IsPrimary)
+                .GroupBy(m => m.EntityId.Value)
+                .Select(g => g.First()) // Lấy object Media đầu tiên
+                .ToDictionaryAsync(k => k.EntityId.Value);
+        }
     }
 }

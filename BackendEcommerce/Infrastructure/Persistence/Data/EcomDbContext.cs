@@ -279,12 +279,11 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.CommentText).HasColumnName("COMMENT_TEXT");
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                entity.Property(e => e.OrderItemId).HasColumnName("ORDER_ITEM_ID");
                 entity.HasOne(r => r.OrderItem)
                  .WithMany() // Assuming OrderItem does not need a collection of Reviews
                  .HasForeignKey(r => r.OrderItemId)
                  .IsRequired();
-                entity.HasIndex(r => r.OrderItemId)
-                  .IsUnique();
             });
 
             // ===============================

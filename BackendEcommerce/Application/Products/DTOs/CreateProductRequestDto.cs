@@ -16,9 +16,28 @@ namespace BackendEcommerce.Application.Products.DTOs
 
         // We will send variants as a list
         [Required]
-        public List<CreateVariantDto> Variants { get; set; } = new List<CreateVariantDto>();
+        public List<CreateVariantRequestDto> Variants { get; set; } = new List<CreateVariantRequestDto>();
 
         // We will send product-level images (optional)
-        public IFormFile? ProductImages { get; set; }
+        public List<IFormFile>? ProductImages { get; set; }
+    }
+    public class CreateVariantRequestDto
+    {
+        [Required]
+        public string SKU { get; set; } = null!;
+        public string? VariantSize { get; set; }
+        public string? Color { get; set; }
+
+        [Required]
+        [Range(1000, 999999999, ErrorMessage = "Số tiền phải lớn hơn 1000 VND.")]
+        public decimal Price { get; set; }
+
+        [Required]
+        [Range(0, int.MaxValue)]
+        public int Quantity { get; set; }
+
+        // The image file for THIS variant
+        [Required(ErrorMessage = "Sản phẩm phải có hình")]
+        public IFormFile Image { get; set; } = null!;
     }
 }

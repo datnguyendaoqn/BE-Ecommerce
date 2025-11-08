@@ -13,6 +13,7 @@ namespace BackendEcommerce.Application.Products
         private readonly IShopRepository _shopRepo;
         private readonly IMediaRepository _mediaRepo;
         private readonly IMediaUploadService _mediaUploadService;
+        private readonly ICategoryRepository _categoryRepo;
         private readonly EcomDbContext _context; // <-- Thêm (chỉ để dùng Transaction)
 
         public ProductService(
@@ -20,22 +21,24 @@ namespace BackendEcommerce.Application.Products
             IShopRepository shopRepo,
             IMediaRepository mediaRepo,
             IMediaUploadService mediaUploadService,
+            ICategoryRepository categoryRepo,
             EcomDbContext context)
         {
             _productRepo = productRepo;
             _shopRepo = shopRepo;
             _mediaRepo = mediaRepo;
             _mediaUploadService = mediaUploadService;
+            _categoryRepo = categoryRepo;
             _context = context;
         }
 
-        public async Task<ApiResponseDTO<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto dto, int sellerId)
+        public async Task<ApiResponseDTO<CreateProductResponseDto>> CreateProductAsync(CreateProductRequestDto dto, int sellerId)
         {
             // === 1. PHÂN QUYỀN (Authorization Check) ===
             var shop = await _shopRepo.GetByOwnerIdAsync(sellerId);
             if (shop == null)
             {
-                return new ApiResponseDTO<ProductResponseDto>
+                return new ApiResponseDTO<CreateProductResponseDto>
                 {
                     IsSuccess = false,
                     Code = 403,
@@ -50,7 +53,7 @@ namespace BackendEcommerce.Application.Products
 
             if (duplicateSkus.Any())
             {
-                return new ApiResponseDTO<ProductResponseDto>
+                return new ApiResponseDTO<CreateProductResponseDto>
                 {
                     IsSuccess = false,
                     Code = 400,
@@ -63,7 +66,7 @@ namespace BackendEcommerce.Application.Products
             var category = await _categoryRepo.GetByIdAsync(dto.CategoryId);
             if (category == null)
             {
-                return new ApiResponseDTO<ProductResponseDto>
+                return new ApiResponseDTO<CreateProductResponseDto>
                 {
                     IsSuccess = false,
                     Code = 400,
@@ -80,42 +83,43 @@ namespace BackendEcommerce.Application.Products
 
             try
             {
-                // === 2. Tạo Product Entity ===
+                // Tạo Product (Cha)
                 var newProduct = new Product
                 {
+                    ShopId = shop.Id,
+                    CategoryId = dto.CategoryId, // Đã check
                     Name = dto.Name,
                     Description = dto.Description,
                     Brand = dto.Brand,
-                    CategoryId = dto.CategoryId,
-                    ShopId = shop.Id,
+                    Status = "active",
                     CreatedAt = DateTime.UtcNow,
                     VariantCount = dto.Variants.Count,
                     MinPrice = dto.Variants.Min(v => v.Price)
                 };
+                //  Xử lý Ảnh của Product (Cha)
+                    int productImageIndex = 0;
+                    foreach (var file in dto.ProductImages)
+                    {
+                        var uploadResult = await _mediaUploadService.UploadImageAsync(file);
+                        uploadedMediaResults.Add(uploadResult);
 
-                // === 3. Upload và Chuẩn bị Media cho Product (Level) ===
-                if (dto.ProductImages != null)
-                {
-                        var uploadResult = await _mediaUploadService.UploadImageAsync(dto.ProductImages);
-                        uploadedMediaResults.Add(uploadResult); // Thêm vào list rollback
                         mediaEntitiesToSave.Add(new Media
                         {
                             EntityType = "product",
-                            // EntityId sẽ được gán sau khi SaveChanges() Product
                             ImageUrl = uploadResult.Url,
                             PublicId = uploadResult.PublicId,
-                            IsPrimary = true,
+                            IsPrimary = (productImageIndex == 0), // Ảnh đầu tiên là ảnh chính
                             CreatedAt = DateTime.UtcNow
                         });
-                }
-
-                // === 4. Upload và Chuẩn bị Media cho Variant (Level) ===
+                        productImageIndex++;
+                    }
+                // ===  Upload và Chuẩn bị Media cho Variant (Level) ===
                 foreach (var variantDto in dto.Variants)
                 {
-                    // 4a. Upload ảnh
+                    // a. Upload ảnh
                     var variantUploadResult = await _mediaUploadService.UploadImageAsync(variantDto.Image);
                     uploadedMediaResults.Add(variantUploadResult); // Thêm vào list rollback
-                    // 4b. Tạo Variant Entity
+                    // b. Tạo Variant Entity
                     var newVariant = new ProductVariant
                     {
                         SKU = variantDto.SKU,
@@ -125,9 +129,9 @@ namespace BackendEcommerce.Application.Products
                         Quantity = variantDto.Quantity,
                         CreatedAt = DateTime.UtcNow
                     };
-                    // 4c. Thêm Variant vào Product
+                    // c. Thêm Variant vào Product
                     newProduct.Variants.Add(newVariant);
-                    // 4d. Chuẩn bị Media cho Variant (chưa gán Id)
+                    // d. Chuẩn bị Media cho Variant (chưa gán Id)
                     mediaEntitiesToSave.Add(new Media
                     {
                         EntityType = "variant",
@@ -139,11 +143,11 @@ namespace BackendEcommerce.Application.Products
                     });
                 }
 
-                // === 5. LƯU PRODUCT (chưa có media) ===
+                // ===  LƯU PRODUCT (chưa có media) ===
                 await _productRepo.AddAsync(newProduct);
                 await _productRepo.SaveChangesAsync(); // STEP 1: Save Product + Variants (Lấy Id)
 
-                // === 6. GÁN ID VÀ LƯU MEDIA (THEO THIẾT KẾ CỦA BẠN) ===
+                // ===  GÁN ID VÀ LƯU MEDIA (THEO THIẾT KẾ CỦA BẠN) ===
                 int variantIndex = 0;
                 foreach (var media in mediaEntitiesToSave)
                 {
@@ -166,18 +170,18 @@ namespace BackendEcommerce.Application.Products
                 await _mediaRepo.AddRangeAsync(mediaEntitiesToSave);
                 await _mediaRepo.SaveChangesAsync(); // STEP 2: Save Media
 
-                // === 7. COMMIT TRANSACTION ===
+                // ===  COMMIT TRANSACTION ===
                 await transaction.CommitAsync();
 
-                // === 8. Trả về DTO ===
+                // ===  Trả về DTO ===
                 // (Vì đã xóa ICollection, chúng ta phải tự query media)
                 // (Bỏ qua bước này, trả về DTO đơn giản trước)
-                var responseDto = new ProductResponseDto
+                var responseDto = new CreateProductResponseDto
                 {
                     Id = newProduct.Id,
                     Name = newProduct.Name,
                     ShopId = newProduct.ShopId,
-                    Variants = newProduct.Variants.Select(v => new VariantResponseDto
+                    Variants = newProduct.Variants.Select(v => new CreateVariantResponseDto
                     {
                         Id = v.Id,
                         SKU = v.SKU,
@@ -185,11 +189,11 @@ namespace BackendEcommerce.Application.Products
                         Quantity = v.Quantity,
                         ImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == v.Id && m.EntityType == "variant")?.ImageUrl ?? ""
                     }).ToList(),
-                    ProductImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == newProduct.Id && m.EntityType == "product")?.ImageUrl ?? "",
+                    ProductImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == newProduct.Id && m.EntityType == "product"&& m.IsPrimary)?.ImageUrl ?? "",
                     VariantCount = newProduct.VariantCount
                 };
 
-                return new ApiResponseDTO<ProductResponseDto>
+                return new ApiResponseDTO<CreateProductResponseDto>
                 {
                     IsSuccess = true,
                     Message = "Product created successfully",
@@ -198,7 +202,7 @@ namespace BackendEcommerce.Application.Products
             }
             catch (Exception ex)
             {
-                // === 9. ROLLBACK (Cả DB và Cloudinary) ===
+                // === ROLLBACK (Cả DB và Cloudinary) ===
                 await transaction.RollbackAsync();
 
                 if (uploadedMediaResults.Any())
@@ -208,7 +212,7 @@ namespace BackendEcommerce.Application.Products
                         await _mediaUploadService.DeleteImageAsync(result.PublicId);
                     }
                 }
-                return new ApiResponseDTO<ProductResponseDto>
+                return new ApiResponseDTO<CreateProductResponseDto>
                 {
                     IsSuccess = false,
                     Code = 500,
@@ -218,13 +222,13 @@ namespace BackendEcommerce.Application.Products
         }
         //
         //
-        public async Task<ApiResponseDTO<List<ProductSummaryDto>>> GetProductsForSellerAsync(int sellerId)
+        public async Task<ApiResponseDTO<List<ProductSummaryResponseDto>>> GetProductsForSellerAsync(int sellerId)
         {
             // 1. Phân quyền: Check xem user này có shop không
             var shop = await _shopRepo.GetByOwnerIdAsync(sellerId);
             if (shop == null)
             {
-                return new ApiResponseDTO<List<ProductSummaryDto>>
+                return new ApiResponseDTO<List<ProductSummaryResponseDto>>
                 {
                     IsSuccess = false,
                     Code = 403,
@@ -237,7 +241,7 @@ namespace BackendEcommerce.Application.Products
             if (!products.Any())
             {
                 // Trả về danh sách rỗng (vẫn là Success)
-                return new ApiResponseDTO<List<ProductSummaryDto>> { IsSuccess = true, Data = new List<ProductSummaryDto>() };
+                return new ApiResponseDTO<List<ProductSummaryResponseDto>> { IsSuccess = true, Data = new List<ProductSummaryResponseDto>() };
             }
 
             var productIds = products.Select(p => p.Id).ToList();
@@ -246,7 +250,7 @@ namespace BackendEcommerce.Application.Products
             var primaryImages = await _mediaRepo.GetPrimaryMediaForEntitiesAsync(productIds, "product");
 
             // 4. Map (ánh xạ) sang DTO
-            var dtos = products.Select(p => new ProductSummaryDto
+            var dtos = products.Select(p => new ProductSummaryResponseDto
             {
                 Id = p.Id,
                 Name = p.Name,
@@ -254,10 +258,78 @@ namespace BackendEcommerce.Application.Products
                 VariantCount = p.VariantCount,
                 Status = p.Status,
                 // Lấy ảnh từ Dictionary, nếu không có thì trả về null
-                PrimaryImageUrl = primaryImages.GetValueOrDefault(p.Id, null)
+                PrimaryImageUrl = primaryImages.GetValueOrDefault(p.Id, null),
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category.Name
             }).ToList();
 
-            return new ApiResponseDTO<List<ProductSummaryDto>> { IsSuccess = true, Data = dtos };
+            return new ApiResponseDTO<List<ProductSummaryResponseDto>> { IsSuccess = true, Data = dtos };
+        }
+        public async Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForSellerAsync(int productId, int sellerId)
+        {
+            // 1. Lấy dữ liệu "nặng" (Product, Variants, Shop, Category)
+            var product = await _productRepo.GetProductDetailByIdAsync(productId);
+
+            // 2. Check "Tồn tại"
+            if (product == null)
+            {
+                return new ApiResponseDTO<ProductDetailResponseDto>
+                { IsSuccess = false, Code = 404, Message = "Product not found" };
+            }
+
+            // 3. Check Phân quyền "Production-Ready"
+            // (Check xem Shop.OwnerId có khớp với sellerId từ Token không)
+            if (product.Shop.OwnerId != sellerId)
+            {
+                return new ApiResponseDTO<ProductDetailResponseDto>
+                { IsSuccess = false, Code = 403, Message = "You do not have permission to view this product" };
+            }
+
+            // 4. Lấy dữ liệu "Media" (Chống N+1)
+            // Lấy TẤT CẢ ảnh của "Cha" (Product)
+            var productMedia = await _mediaRepo.GetMediaForEntityAsync(product.Id, "product");
+
+            // Lấy ẢNH CHÍNH của TẤT CẢ "Con" (Variants)
+            var variantIds = product.Variants.Select(v => v.Id).ToList();
+            var variantPrimaryImages = await _mediaRepo.GetPrimaryMediaForEntitiesMapAsync(variantIds, "variant");
+
+            // 5. "Map" (Ánh xạ) sang DTO "Chi tiết"
+            var dto = new ProductDetailResponseDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Brand = product.Brand,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category.Name,
+                ShopId = product.ShopId,
+                Status = product.Status,
+
+                // Lấy ảnh Chính (IsPrimary=true) từ list media của Product
+                PrimaryImageUrl = productMedia
+                    .FirstOrDefault(m => m.IsPrimary)?.ImageUrl,
+
+                // Lấy ảnh Gallery (IsPrimary=false) từ list media của Product
+                GalleryImageUrls = productMedia
+                    .Select(m => m.ImageUrl ?? "") // ?? "" để tránh null
+                    .ToList(),
+
+                Variants = product.Variants.Select(v => new ProductVariantDetailDto
+                {
+                    Id = v.Id,
+                    SKU = v.SKU,
+                    VariantSize = v.VariantSize,
+                    Color = v.Color,
+                    Material = v.Material,
+                    Price = v.Price,
+                    Quantity = v.Quantity,
+
+                    // Lấy ảnh chính của Variant từ Dictionary
+                    PrimaryImageUrl = variantPrimaryImages.GetValueOrDefault(v.Id)?.ImageUrl
+                }).ToList()
+            };
+
+            return new ApiResponseDTO<ProductDetailResponseDto> { IsSuccess = true, Data = dto };
         }
     }
 }
