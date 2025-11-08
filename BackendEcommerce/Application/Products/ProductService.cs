@@ -265,6 +265,8 @@ namespace BackendEcommerce.Application.Products
 
             return new ApiResponseDTO<List<ProductSummaryResponseDto>> { IsSuccess = true, Data = dtos };
         }
+        //
+        //
         public async Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForSellerAsync(int productId, int sellerId)
         {
             // 1. Lấy dữ liệu "nặng" (Product, Variants, Shop, Category)
@@ -330,6 +332,83 @@ namespace BackendEcommerce.Application.Products
             };
 
             return new ApiResponseDTO<ProductDetailResponseDto> { IsSuccess = true, Data = dto };
+        }
+        //
+        //
+        public async Task<ApiResponseDTO<UpdateProductResponseDto>> UpdateProductAsync(int productId, UpdateProductRequestDto dto, int sellerId)
+        {
+            // === BƯỚC 1: VALIDATION (Check 404 - Not Found) ===
+
+            // Sử dụng hàm "Get" nhẹ mới, KHÔNG load Variants
+            var product = await _productRepo.GetProductForUpdateAsync(productId);
+
+            if (product == null)
+            {
+                return new ApiResponseDTO<UpdateProductResponseDto>
+                {
+                    IsSuccess = false,
+                    Code = 404,
+                    Message = $"Product with ID {productId} not found."
+                };
+            }
+
+            // === BƯỚC 2: VALIDATION (Check 403 - Quyền sở hữu) ===
+            if (product.Shop.OwnerId != sellerId)
+            {
+                return new ApiResponseDTO<UpdateProductResponseDto>
+                {
+                    IsSuccess = false,
+                    Code = 403,
+                    Message = "Forbidden: You do not have permission to edit this product."
+                };
+            }
+
+            // Biến tạm để lưu tên Category cho DTO phản hồi
+            string categoryNameForResponse = product.Category.Name; // Mặc định là tên cũ
+
+            // === BƯỚC 3: VALIDATION (Check 400 - CategoryId mới) ===
+            if (dto.CategoryId != product.CategoryId) // Chỉ check DB khi CategoryId thay đổi
+            {
+                var categoryExists = await _categoryRepo.GetByIdAsync(dto.CategoryId);
+                if (categoryExists == null)
+                {
+                    return new ApiResponseDTO<UpdateProductResponseDto>
+                    {
+                        IsSuccess = false,
+                        Code = 400,
+                        Message = $"New CategoryId '{dto.CategoryId}' does not exist."
+                    };
+                }
+
+                // Cập nhật tên mới để trả về
+                categoryNameForResponse = categoryExists.Name;
+            }
+
+            // === BƯỚC 4: THỰC THI UPDATE ===
+            // Ánh xạ các trường từ DTO
+            product.Name = dto.Name;
+            product.Description = dto.Description;
+            product.Brand = dto.Brand;
+            product.CategoryId = dto.CategoryId;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            _productRepo.Update(product); // Đánh dấu "Sửa"
+            await _productRepo.SaveChangesAsync(); // Lưu thay đổi
+
+            // === BƯỚC 5: TRẢ VỀ DỮ LIỆU "NHẸ" MỚI ===
+            var responseDto = new UpdateProductResponseDto
+            {
+                Id = product.Id,
+                UpdatedAt = DateTime.UtcNow,
+                CategoryName = categoryNameForResponse
+            };
+
+            return new ApiResponseDTO<UpdateProductResponseDto>
+            {
+                IsSuccess = true,
+                Message = "Product updated successfully.",
+                Data = responseDto
+            };
         }
     }
 }

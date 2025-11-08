@@ -60,5 +60,17 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 .Select(g => g.First()) // Lấy object Media đầu tiên
                 .ToDictionaryAsync(k => k.EntityId.Value);
         }
+
+        public async Task<Media?> GetByIdAsync(int mediaId)
+        {
+            return await _context.Media
+                .FirstOrDefaultAsync(m => m.Id == mediaId);
+        }
+
+        public void Update(Media media)
+        {
+            // Chỉ cần đánh dấu là "Modified", SaveChangesAsync sẽ lưu sau
+            _context.Entry(media).State = EntityState.Modified;
+        }
     }
 }
