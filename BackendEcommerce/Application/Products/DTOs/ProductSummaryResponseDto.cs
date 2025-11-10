@@ -12,8 +12,21 @@
         public string Status { get; set; } = "active";
       
         public int CategoryId { get; set; }
+        /// <summary>
+        /// Tổng số lượt đã bán
+        /// </summary>
+        public int SelledCount { get; set; } = 0;
 
-        
+        /// <summary>
+        /// Tổng số lượt đánh giá
+        /// </summary>
+        public int ReviewCount { get; set; } = 0;
+
+        /// <summary>
+        /// Điểm xếp hạng trung bình
+        /// </summary>
+        public double AverageRating { get; set; } = 0;
+
         public string CategoryName { get; set; } = string.Empty;
     }
 }

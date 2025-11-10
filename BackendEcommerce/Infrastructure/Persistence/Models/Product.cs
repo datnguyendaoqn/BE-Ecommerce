@@ -1,4 +1,4 @@
-
+﻿
 namespace BackendEcommerce.Infrastructure.Persistence.Models
 {
     /// <summary>
@@ -15,6 +15,18 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
         public string Status { get; set; } = "active";
         public int VariantCount { get; set; }
         public decimal MinPrice { get; set; }
+        public int SelledCount { get; set; } = 0;
+
+        /// <summary>
+        /// Tổng số lượt đánh giá (Do ReviewService cập nhật)
+        /// </summary>
+        public int ReviewCount { get; set; } = 0;
+
+        /// <summary>
+        /// Điểm xếp hạng trung bình (Do ReviewService cập nhật)
+        /// </summary>
+        public double AverageRating { get; set; } = 0.0;
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public Shop Shop { get; set; } = null!;

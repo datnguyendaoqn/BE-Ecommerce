@@ -23,8 +23,8 @@ namespace BackendEcommerce.Presentation.Controllers
         /// <param name="productId">ID của sản phẩm (Lấy từ URL route)</param>
         [HttpGet] // <-- Chỉ cần [HttpGet] vì route đã ở trên
         [AllowAnonymous] // Ai cũng xem được
-        [ProducesResponseType(typeof(ApiResponseDTO<List<ReviewResponseDto>>), 200)]
-        public async Task<ActionResult<ApiResponseDTO<List<ReviewResponseDto>>>> GetProductReviews(int productId)
+        [ProducesResponseType(typeof(ApiResponseDTO<List<ReviewProductResponseDto>>), 200)]
+        public async Task<ActionResult<ApiResponseDTO<List<ReviewProductResponseDto>>>> GetProductReviews(int productId)
         {
             var response = await _reviewService.GetProductReviewsAsync(productId);
             return Ok(response);

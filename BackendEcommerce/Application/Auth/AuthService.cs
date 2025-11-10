@@ -69,7 +69,7 @@ namespace BackendEcommerce.Application.Auth
         }
         public async Task<ApiResponseDTO<string>> RequestLoginOtpAsync(RequestLoginDTO obj)
         {
-            return await SendOtpToExistingUserAsync(obj.Email, "Email is invalid.");
+            return await SendOtpToExistingUserAsync(obj.Email, "Email không đúng.");
         }
         public async Task<ApiResponseDTO<string>> RequestRegisterOtpAsync(RequestRegisterOtpDTO dto)
         {

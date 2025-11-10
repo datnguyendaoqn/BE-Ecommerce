@@ -1,4 +1,6 @@
-﻿using BackendEcommerce.Domain.Contracts.Persistence;
+﻿using BackendEcommerce.Application.Products.DTOs;
+using BackendEcommerce.Application.Shared.DTOs;
+using BackendEcommerce.Domain.Contracts.Persistence;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
@@ -68,6 +70,104 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 .Include(p => p.Shop)       // Cần cho check quyền 403
                 .Include(p => p.Category)   // Cần để lấy Category.Name
                 .FirstOrDefaultAsync(p => p.Id == productId);
+        }
+
+        //
+        //
+        public async Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query)
+        {
+            // 1. Bắt đầu IQueryable
+            // Chỉ lấy sản phẩm "active"
+            IQueryable<Product> productsQuery = _context.Products
+                                                    .AsNoTracking() // Tối ưu (Chỉ đọc)
+                                                    .Where(p => p.Status == "active");
+
+            // 2. Áp dụng Filter (Lọc)
+            if (query.CategoryId.HasValue)
+            {
+                productsQuery = productsQuery.Where(p => p.CategoryId == query.CategoryId.Value);
+            }
+            if (query.MinPrice.HasValue)
+            {
+                // (Giả định Product có cột MinPrice)
+                productsQuery = productsQuery.Where(p => p.MinPrice >= query.MinPrice.Value);
+            }
+            if (query.MaxPrice.HasValue)
+            {
+                productsQuery = productsQuery.Where(p => p.MinPrice <= query.MaxPrice.Value);
+            }
+            if (query.MinRating.HasValue)
+            {
+                // (Giả định Product có cột AverageRating)
+                productsQuery = productsQuery.Where(p => p.AverageRating >= query.MinRating.Value);
+            }
+            if (!string.IsNullOrEmpty(query.SearchTerm))
+            {
+                productsQuery = productsQuery.Where(p => p.Name.ToLower().Contains(query.SearchTerm.ToLower()));
+            }
+
+            // 3. Áp dụng Sorting (Sắp xếp)
+            // (Sắp xếp TRƯỚC khi Select, để tận dụng index DB)
+            switch (query.SortBy?.ToLower())
+            {
+                case "price_asc":
+                    productsQuery = productsQuery.OrderBy(p => p.MinPrice);
+                    break;
+                case "price_desc":
+                    productsQuery = productsQuery.OrderByDescending(p => p.MinPrice);
+                    break;
+                case "newest":
+                    productsQuery = productsQuery.OrderByDescending(p => p.CreatedAt);
+                    break;
+                case "popular":
+                    // (Giả định "popular" = "selledcount")
+                    productsQuery = productsQuery.OrderByDescending(p => p.SelledCount);
+                    break;
+                default:
+                    // Mặc định: Sắp xếp theo mức độ phổ biến
+                    productsQuery = productsQuery.OrderByDescending(p => p.SelledCount);
+                    break;
+            }
+
+            // 4. Lấy TotalCount (TRƯỚC khi Phân trang)
+            var totalCount = await productsQuery.CountAsync();
+
+            // 5. Áp dụng Phân trang (Pagination)
+            var pagedQuery = productsQuery
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize);
+
+            // 6. Ánh xạ (Select) sang DTO (SAU CÙNG)
+            // (Chúng ta cần 3 cột "trade-off" và ảnh chính)
+            var productCards = await pagedQuery
+                .Select(p => new ProductCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    MinPrice = p.MinPrice,
+                    AverageRating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    SelledCount = p.SelledCount,
+
+                    // Lấy ảnh chính (Giả định: dùng sub-query)
+                    // CẢNH BÁO: Sub-query này có thể chậm.
+                    // Cách tốt hơn sau này là Join hoặc dùng Function của DB.
+                    PrimaryImageUrl = _context.Media
+                                        .Where(m => m.EntityId == p.Id &&
+                                                    m.EntityType == "product" &&
+                                                    m.IsPrimary == true)
+                                        .Select(m => m.ImageUrl)
+                                        .FirstOrDefault() ?? "https://placehold.co/300x300?text=No+Image" // Ảnh mặc định
+                })
+                .ToListAsync();
+
+            // 7. Trả về DTO Phân trang (đã thống nhất)
+            return new PagedListResponseDto<ProductCardDto>(
+                productCards,
+                totalCount,
+                query.PageNumber,
+                query.PageSize
+            );
         }
     }
 }

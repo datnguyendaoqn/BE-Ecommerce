@@ -1,15 +1,9 @@
 ﻿// Nhớ using các thư mục con của Application
 using BackendEcommerce.Application.Auth;
 using BackendEcommerce.Application.Categories;
+using BackendEcommerce.Application.Medias;
 using BackendEcommerce.Application.Products;
 using BackendEcommerce.Application.Reviews;
-using BackendEcommerce.Domain.Contracts.Persistence;
-using BackendEcommerce.Domain.Contracts.Services;
-using BackendEcommerce.Infrastructure;
-using BackendEcommerce.Infrastructure.Medias;
-using BackendEcommerce.Infrastructure.Persistence.Repositories;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace BackendEcommerce.Application
 {
@@ -22,6 +16,7 @@ namespace BackendEcommerce.Application
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<IMediaService, MediaService>();
             return services;
         }
     }

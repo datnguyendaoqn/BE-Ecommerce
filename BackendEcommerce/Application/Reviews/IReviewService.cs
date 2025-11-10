@@ -5,6 +5,6 @@ namespace BackendEcommerce.Application.Reviews
 {
     public interface IReviewService
     {
-        Task<ApiResponseDTO<List<ReviewResponseDto>>> GetProductReviewsAsync(int productId);
+        Task<ApiResponseDTO<List<ReviewProductResponseDto>>> GetProductReviewsAsync(int productId);
     }
 }

@@ -143,6 +143,11 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
                 entity.Property(e => e.VariantCount).HasColumnName("VARIANT_COUNT");
                 entity.Property(e => e.MinPrice).HasColumnName("MIN_PRICE").HasPrecision(12, 2);
+                entity.Property(p => p.SelledCount).HasColumnName("SELLED_COUNT").HasDefaultValue(0);
+
+                entity.Property(p => p.ReviewCount).HasColumnName("REVIEW_COUNT").HasDefaultValue(0);
+
+                entity.Property(p => p.AverageRating).HasColumnName("AVERAGE_RATING").HasDefaultValue(0.0).HasPrecision(3,2);
             });
 
             // ===============================
@@ -172,12 +177,12 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.ToTable("MEDIA");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasColumnName("ID");
-                entity.Property(e => e.EntityType).HasColumnName("ENTITY_TYPE");
+                entity.Property(e => e.EntityType).HasColumnName("ENTITY_TYPE").IsUnicode(false);
                 entity.Property(e => e.EntityId).HasColumnName("ENTITY_ID");
-                entity.Property(e => e.ImageUrl).HasColumnName("IMAGE_URL");
-                entity.Property(e => e.PublicId).HasColumnName("PUBLIC_ID");
+                entity.Property(e => e.ImageUrl).HasColumnName("IMAGE_URL").IsUnicode(false);
+                entity.Property(e => e.PublicId).HasColumnName("PUBLIC_ID").IsUnicode(false);
                 entity.Property(e => e.IsPrimary).HasColumnName("IS_PRIMARY");
-                entity.Property(e => e.AltText).HasColumnName("ALT_TEXT");
+                entity.Property(e => e.AltText).HasColumnName("ALT_TEXT").IsUnicode(false);
                 entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
             });
 

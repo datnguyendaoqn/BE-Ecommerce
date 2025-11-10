@@ -49,6 +49,7 @@ namespace BackendEcommerce.Infrastructure
             services.AddScoped<IMediaUploadService, CloudinaryMediaService>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
+            services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 
             // (Và cấu hình Cloudinary Account từ IConfiguration...)
 
