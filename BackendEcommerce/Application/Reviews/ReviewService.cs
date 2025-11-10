@@ -19,13 +19,13 @@ namespace BackendEcommerce.Application.Reviews
 
         // === LOGIC ĐƯỢC DI CHUYỂN TỪ PRODUCTSERVICE SANG ===
 
-        public async Task<ApiResponseDTO<List<ReviewResponseDto>>> GetProductReviewsAsync(int productId)
+        public async Task<ApiResponseDTO<List<ReviewProductResponseDto>>> GetProductReviewsAsync(int productId)
         {
             var productExists = await _productRepo.ExistsAsync(productId);
             if (!productExists)
             {
                 // Nếu KHÔNG, trả về 404 (Production-Ready)
-                return new ApiResponseDTO<List<ReviewResponseDto>>
+                return new ApiResponseDTO<List<ReviewProductResponseDto>>
                 {
                     IsSuccess = false,
                     Code = 404, // <-- Mã lỗi 404
@@ -35,7 +35,7 @@ namespace BackendEcommerce.Application.Reviews
             // 1. Lấy dữ liệu thô (đã gộp User, Variant)
             var reviews = await _reviewRepo.GetReviewsForProductAsync(productId);
             // 2. Map (Ánh xạ) sang DTO (và xử lý logic)
-            var dtos = reviews.Select(r => new ReviewResponseDto
+            var dtos = reviews.Select(r => new ReviewProductResponseDto
             {
                 Id = r.Id,
                 AuthorName = r.User.FullName,
@@ -46,7 +46,7 @@ namespace BackendEcommerce.Application.Reviews
                 VariantInfo = FormatVariantInfo(r.Variant)
             }).ToList();
 
-            return new ApiResponseDTO<List<ReviewResponseDto>> { IsSuccess = true, Data = dtos };
+            return new ApiResponseDTO<List<ReviewProductResponseDto>> { IsSuccess = true, Data = dtos };
         }
 
 

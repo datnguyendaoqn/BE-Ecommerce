@@ -1,4 +1,6 @@
-﻿using BackendEcommerce.Infrastructure.Persistence.Models;
+﻿using BackendEcommerce.Application.Products.DTOs;
+using BackendEcommerce.Application.Shared.DTOs;
+using BackendEcommerce.Infrastructure.Persistence.Models;
 
 namespace BackendEcommerce.Domain.Contracts.Persistence
 {
@@ -12,6 +14,7 @@ namespace BackendEcommerce.Domain.Contracts.Persistence
         Task<bool> ExistsAsync(int productId);
         void Update(Product product);
         Task<Product?> GetProductForUpdateAsync(int productId);
+        Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query);
     }
 
 }

@@ -25,12 +25,16 @@ namespace BackendEcommerce.Application.Products.DTOs
     {
         [Required]
         public string SKU { get; set; } = null!;
+        [Required]
         public string? VariantSize { get; set; }
+        [Required]
         public string? Color { get; set; }
 
         [Required]
         [Range(1000, 999999999, ErrorMessage = "Số tiền phải lớn hơn 1000 VND.")]
         public decimal Price { get; set; }
+        [Required]
+        public string Material { get; set; } = null!;
 
         [Required]
         [Range(0, int.MaxValue)]

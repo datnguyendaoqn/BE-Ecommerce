@@ -1,10 +1,12 @@
-﻿using BackendEcommerce.Application.Products.DTOs;
+﻿using BackendEcommerce.Application.Medias.DTOs;
+using BackendEcommerce.Application.Products.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Domain.Contracts.Persistence;
 using BackendEcommerce.Domain.Contracts.Services;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Diagnostics;
 namespace BackendEcommerce.Application.Products
 {
     public class ProductService : IProductService
@@ -13,6 +15,7 @@ namespace BackendEcommerce.Application.Products
         private readonly IShopRepository _shopRepo;
         private readonly IMediaRepository _mediaRepo;
         private readonly IMediaUploadService _mediaUploadService;
+        private readonly IProductVariantRepository _variantRepo;
         private readonly ICategoryRepository _categoryRepo;
         private readonly EcomDbContext _context; // <-- Thêm (chỉ để dùng Transaction)
 
@@ -21,10 +24,12 @@ namespace BackendEcommerce.Application.Products
             IShopRepository shopRepo,
             IMediaRepository mediaRepo,
             IMediaUploadService mediaUploadService,
+            IProductVariantRepository variantRepo,
             ICategoryRepository categoryRepo,
             EcomDbContext context)
         {
             _productRepo = productRepo;
+            _variantRepo = variantRepo;
             _shopRepo = shopRepo;
             _mediaRepo = mediaRepo;
             _mediaUploadService = mediaUploadService;
@@ -116,6 +121,18 @@ namespace BackendEcommerce.Application.Products
                 // ===  Upload và Chuẩn bị Media cho Variant (Level) ===
                 foreach (var variantDto in dto.Variants)
                 {
+                    // === BỔ SUNG VALIDATION MỚI (THEO YÊU CẦU) ===
+                    var validationError = ValidateVariantAttributes(variantDto.VariantSize, variantDto.Color);
+                    if (validationError != null)
+                    {
+                        await transaction.RollbackAsync(); // Hủy transaction
+                        return new ApiResponseDTO<CreateProductResponseDto>
+                        {
+                            IsSuccess = false,
+                            Code = 400,
+                            Message = $"Variant (SKU: {variantDto.SKU}): {validationError}" // Thêm SKU để FE biết lỗi ở đâu
+                        };
+                    }
                     // a. Upload ảnh
                     var variantUploadResult = await _mediaUploadService.UploadImageAsync(variantDto.Image);
                     uploadedMediaResults.Add(variantUploadResult); // Thêm vào list rollback
@@ -126,6 +143,7 @@ namespace BackendEcommerce.Application.Products
                         VariantSize = variantDto.VariantSize,
                         Color = variantDto.Color,
                         Price = variantDto.Price,
+                        Material= variantDto.Material,
                         Quantity = variantDto.Quantity,
                         CreatedAt = DateTime.UtcNow
                     };
@@ -187,9 +205,10 @@ namespace BackendEcommerce.Application.Products
                         SKU = v.SKU,
                         Price = v.Price,
                         Quantity = v.Quantity,
+                        Material = v.Material,
                         ImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == v.Id && m.EntityType == "variant")?.ImageUrl ?? ""
                     }).ToList(),
-                    ProductImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == newProduct.Id && m.EntityType == "product"&& m.IsPrimary)?.ImageUrl ?? "",
+                    ProductImageUrl = mediaEntitiesToSave.FirstOrDefault(m => m.EntityId == newProduct.Id && m.EntityType == "product" && m.IsPrimary)?.ImageUrl ?? "",
                     VariantCount = newProduct.VariantCount
                 };
 
@@ -257,6 +276,12 @@ namespace BackendEcommerce.Application.Products
                 MinPrice = p.MinPrice,
                 VariantCount = p.VariantCount,
                 Status = p.Status,
+                SelledCount = 0,
+                ReviewCount =0,
+                AverageRating = 0,
+                //SelledCount = product.SelledCount,
+                //ReviewCount = product.ReviewCount,
+                //AverageRating = product.AverageRating
                 // Lấy ảnh từ Dictionary, nếu không có thì trả về null
                 PrimaryImageUrl = primaryImages.GetValueOrDefault(p.Id, null),
                 CategoryId = p.CategoryId,
@@ -307,27 +332,35 @@ namespace BackendEcommerce.Application.Products
                 ShopId = product.ShopId,
                 Status = product.Status,
 
-                // Lấy ảnh Chính (IsPrimary=true) từ list media của Product
-                PrimaryImageUrl = productMedia
-                    .FirstOrDefault(m => m.IsPrimary)?.ImageUrl,
-
-                // Lấy ảnh Gallery (IsPrimary=false) từ list media của Product
-                GalleryImageUrls = productMedia
-                    .Select(m => m.ImageUrl ?? "") // ?? "" để tránh null
-                    .ToList(),
-
-                Variants = product.Variants.Select(v => new ProductVariantDetailDto
+                ProductImages = productMedia.Select(m => new ProductMediaDto
                 {
-                    Id = v.Id,
-                    SKU = v.SKU,
-                    VariantSize = v.VariantSize,
-                    Color = v.Color,
-                    Material = v.Material,
-                    Price = v.Price,
-                    Quantity = v.Quantity,
+                    Id = m.Id,
+                    ImageUrl = m.ImageUrl ?? "",
+                    IsPrimary = m.IsPrimary
+                }).ToList(),
 
-                    // Lấy ảnh chính của Variant từ Dictionary
-                    PrimaryImageUrl = variantPrimaryImages.GetValueOrDefault(v.Id)?.ImageUrl
+                // === SỬA LỖI MAPPING (VARIANT) ===
+                Variants = product.Variants.Select(v => {
+                    // Lấy object Media từ Dictionary
+                    var primaryMediaObject = variantPrimaryImages.GetValueOrDefault(v.Id);
+
+                    return new ProductVariantDetailDto
+                    {
+                        Id = v.Id,
+                        SKU = v.SKU,
+                        VariantSize = v.VariantSize,
+                        Color = v.Color,
+                        Material = v.Material,
+                        Price = v.Price,
+                        Quantity = v.Quantity,
+
+                        // Ánh xạ sang DTO object (nếu có)
+                        PrimaryImage = primaryMediaObject == null ? null : new VariantMediaDto
+                        {
+                            Id = primaryMediaObject.Id,
+                            ImageUrl = primaryMediaObject.ImageUrl ?? ""
+                        }
+                    };
                 }).ToList()
             };
 
@@ -409,6 +442,131 @@ namespace BackendEcommerce.Application.Products
                 Message = "Product updated successfully.",
                 Data = responseDto
             };
+        }
+        //
+        //
+        // === UPDATE VARIANT (CHỨC NĂNG 4A) ===
+        public async Task<ApiResponseDTO<UpdateProductVariantResponseDto>> UpdateProductVariantAsync(
+            int productId, int variantId, UpdateProductVariantRequestDto dto, int sellerId)
+        {
+            // 1. Lấy Variant (đã bao gồm Product -> Shop)
+            var variant = await _variantRepo.GetVariantWithProductAndShopAsync(variantId);
+
+            // 2. Validation 404
+            if (variant == null)
+            {
+                return new ApiResponseDTO<UpdateProductVariantResponseDto>
+                { IsSuccess = false, Code = 404, Message = $"Variant with ID {variantId} not found." };
+            }
+
+            // 3. Validation 400 (Cha-Con)
+            if (variant.ProductId != productId)
+            {
+                return new ApiResponseDTO<UpdateProductVariantResponseDto>
+                { IsSuccess = false, Code = 400, Message = $"Variant {variantId} does not belong to Product {productId}." };
+            }
+
+            // 4. Validation 403 (Quyền sở hữu)
+            if (variant.Product.Shop.OwnerId != sellerId)
+            {
+                return new ApiResponseDTO<UpdateProductVariantResponseDto>
+                { IsSuccess = false, Code = 403, Message = "Forbidden: You do not have permission to edit this variant." };
+            }
+
+            // 5. Validation 400 (Thuộc tính Size/Color) - "Lưới an toàn"
+            var validationError = ValidateVariantAttributes(dto.VariantSize, dto.Color);
+            if (validationError != null)
+            {
+                return new ApiResponseDTO<UpdateProductVariantResponseDto>
+                { IsSuccess = false, Code = 400, Message = validationError };
+            }
+
+            // 6. (TODO: Validation 400 (SKU bị trùng lặp với variant khác))
+            // (Chúng ta sẽ thêm sau nếu cần)
+
+            // 7. Thực thi Update
+            variant.SKU = dto.SKU;
+            variant.Price = dto.Price;
+            variant.Quantity = dto.Quantity;
+            variant.VariantSize = dto.VariantSize; // Đã validate
+            variant.Color = dto.Color; // Đã validate
+            variant.Material = dto.Material;
+            variant.UpdatedAt = DateTime.UtcNow;
+
+            _variantRepo.Update(variant);
+            await _context.SaveChangesAsync();
+
+            // 8. Trả về DTO "nhẹ" (CQRS)
+            var responseDto = new UpdateProductVariantResponseDto
+            {
+                VariantId = variant.Id,
+                ProductId = variant.ProductId,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            return new ApiResponseDTO<UpdateProductVariantResponseDto>
+            { IsSuccess = true, Message = "Variant updated successfully.", Data = responseDto };
+        }
+
+        //
+        //
+        public async Task<ApiResponseDTO<PagedListResponseDto<ProductCardDto>>> GetProductListForCustomerAsync(ProductListQueryRequestDto query)
+        {
+          
+            try
+            {
+                // Giao hết công việc Query "nặng" cho Repository
+                // Repo sẽ tự Lọc, Sắp xếp, Phân trang, và Ánh xạ sang DTO
+                var pagedResult = await _productRepo.GetPaginatedProductCardsAsync(query);
+
+                return new ApiResponseDTO<PagedListResponseDto<ProductCardDto>>
+                {
+                    IsSuccess = true,
+                    Code=200,
+                    Message = "Lấy danh sách sản phẩm thành công.",
+                    Data = pagedResult
+                };
+            }
+            catch (Exception ex)
+            {
+                // (Log lỗi ở đây)
+                Debug.WriteLine($"Lỗi khi lấy danh sách sản phẩm: {ex.Message}");
+                return new ApiResponseDTO<PagedListResponseDto<ProductCardDto>>
+                {
+                    IsSuccess = false,
+                    Code = 500,
+                    Message = "Lỗi hệ thống khi lấy danh sách sản phẩm."
+                };
+            }
+        }
+
+        //
+        /// <summary>
+        /// Hàm "Lưới an toàn" (Safety Net) để check các thuộc tính chuẩn hóa.
+        /// Trả về NULL nếu hợp lệ, trả về string (Message lỗi) nếu không hợp lệ.
+        /// </summary>
+        private string? ValidateVariantAttributes(string? size, string? color)
+        {
+            // (Lấy từ Tài liệu chung)
+            // (Chấp nhận giá trị null/empty)
+            var allowedSizes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "S", "M", "L", "XL", "XXL" };
+
+            var allowedColors = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "Đen", "Trắng", "Đỏ", "Xanh", "Vàng", "Hồng", "Blue", "Red", "Black", "White" };
+
+            if (!string.IsNullOrEmpty(size) && !allowedSizes.Contains(size))
+            {
+                return $"Size '{size}' không hợp lệ. Các giá trị hợp lệ là: S, M, L, XL, XXL.";
+            }
+
+            if (!string.IsNullOrEmpty(color) && !allowedColors.Contains(color))
+            {
+                return $"Màu '{color}' không hợp lệ. (Ví dụ: Đen, Trắng, Đỏ...).";
+            }
+
+            // Hợp lệ
+            return null;
         }
     }
 }

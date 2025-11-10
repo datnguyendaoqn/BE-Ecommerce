@@ -1,6 +1,6 @@
 ﻿namespace BackendEcommerce.Application.Reviews.DTOs
 {
-    public class ReviewResponseDto
+    public class ReviewProductResponseDto
     {
         public int Id { get; set; }
         public string AuthorName { get; set; } = string.Empty;

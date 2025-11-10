@@ -72,5 +72,10 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             // Chỉ cần đánh dấu là "Modified", SaveChangesAsync sẽ lưu sau
             _context.Entry(media).State = EntityState.Modified;
         }
+        public void Delete(Media media)
+        {
+            // Chỉ cần đánh dấu là "Deleted", SaveChangesAsync sẽ xóa sau
+            _context.Media.Remove(media);
+        }
     }
 }

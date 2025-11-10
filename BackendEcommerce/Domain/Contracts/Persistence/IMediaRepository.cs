@@ -11,5 +11,6 @@ namespace BackendEcommerce.Domain.Contracts.Persistence
         Task<Dictionary<int, Media>> GetPrimaryMediaForEntitiesMapAsync(IEnumerable<int> entityIds, string entityType);
         Task<Media?> GetByIdAsync(int mediaId);
         void Update(Media media);
+        void Delete(Media media);
     }
 }

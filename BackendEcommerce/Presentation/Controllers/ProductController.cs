@@ -10,7 +10,6 @@ namespace BackendEcommerce.Presentation.Controllers
 {
     [ApiController]
     [Route("api/product")]
-    [Authorize] // Only authenticated users can access
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -137,5 +136,25 @@ namespace BackendEcommerce.Presentation.Controllers
             // 4. Trả về 200 OK (với DTO "nhẹ" - UpdateProductResponseDto)
             return Ok(response);
         }
+        //
+        //
+        [HttpGet]
+        public async Task<IActionResult> GetProductList([FromQuery] ProductListQueryRequestDto query)
+        {
+            // Giao hết việc cho Service
+            var response = await _productService.GetProductListForCustomerAsync(query);
+
+            if (!response.IsSuccess)
+            {
+                // Đây là API public, lỗi thường là 500
+                return StatusCode(500, response);
+            }
+
+            // Trả về 200 OK với PagedListResponseDto<ProductCardDto>
+            return Ok(response);
+        }
+
+        // (Sau này chúng ta sẽ thêm [HttpGet("{id}")]
+        // để gọi hàm GetProductDetailForBuyerAsync tại đây)
     }
 }
