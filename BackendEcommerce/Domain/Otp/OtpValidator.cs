@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Caching;
+﻿using BackendEcommerce.Application.Shared.Contracts;
 
 namespace BackendEcommerce.Domain.Otp
 {

@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Application.Medias;
-using BackendEcommerce.Application.Medias.DTOs;
+﻿using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Medias.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace BackendEcommerce.Presentation.Controllers
 {
-    [Route("api/media")] // Đường dẫn gốc cho Media
+    [Route("api/medias")] // Đường dẫn gốc cho Media
     [ApiController]
     [Authorize(Roles = "seller")] // Chỉ Seller mới được thao tác
     public class MediaController : ControllerBase

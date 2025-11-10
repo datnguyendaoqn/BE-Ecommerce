@@ -1,21 +1,17 @@
-﻿using BackendEcommerce.Domain.Contracts.Caching;
-using BackendEcommerce.Domain.Contracts.Email;
-using BackendEcommerce.Domain.Contracts.Persistence;
-using BackendEcommerce.Domain.Contracts.Services;
+﻿using BackendEcommerce.Application.Features.Auth.Contracts;
+using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.Reviews.Contracts;
+using BackendEcommerce.Application.Shared.Contracts;
 using BackendEcommerce.Infrastructure.Caching.Redis;
 using BackendEcommerce.Infrastructure.Email;
 using BackendEcommerce.Infrastructure.Medias;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Repositories;
-using BackendEcommerce.Infrastructure.Security;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using Resend;
 using StackExchange.Redis;
-using System.Text;
 
 namespace BackendEcommerce.Infrastructure
 {
@@ -71,27 +67,7 @@ namespace BackendEcommerce.Infrastructure
             services.AddSingleton<IResend>(_ => ResendClient.Create(resendApiKey));
             services.AddScoped<IEmailService, ResendEmailService>();
 
-            // 4. Cấu hình Security (JwtHelper)
-            var jwtKey = configuration["JWT_KEY"];
-            if (string.IsNullOrEmpty(jwtKey))
-                throw new Exception("Missing JWT_KEY in environment variables.");
-
-            services.AddSingleton(new JwtHelper(jwtKey));
-
-            //5. JWT
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    // This is the logic from your JwtHelper!
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = true, // Checks if expired
-                    ValidateIssuerSigningKey = true, // Checks the signature
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT_KEY"]))
-                };
-            });
+           
             return services;
 
         }

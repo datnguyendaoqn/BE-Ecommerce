@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Infrastructure.Persistence.Models;
-using BackendEcommerce.Infrastructure.Security;
+﻿using BackendEcommerce.Application.Features.Auth;
+using BackendEcommerce.Infrastructure.Persistence.Models;
 using System.Security.Cryptography;
 
 namespace BackendEcommerce.Domain.Auth

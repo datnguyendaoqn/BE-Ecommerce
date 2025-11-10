@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Application.Categories;
-using BackendEcommerce.Application.Categories.DTOs;
+﻿using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Categories.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BackendEcommerce.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/category")]
+    [Route("api/categories")]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;

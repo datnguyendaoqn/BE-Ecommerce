@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Persistence;
+﻿using BackendEcommerce.Application.Features.Categories.Contracts;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
