@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Email;
+﻿using BackendEcommerce.Application.Shared.Contracts;
 using BackendEcommerce.Domain.Email;
 using Resend;
 

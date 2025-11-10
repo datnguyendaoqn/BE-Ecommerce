@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Application.Reviews;
-using BackendEcommerce.Application.Reviews.DTOs;
+﻿using BackendEcommerce.Application.Features.Reviews.Contracts;
+using BackendEcommerce.Application.Features.Reviews.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BackendEcommerce.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/product/{productId}/reviews")]
+    [Route("api")]
     public class ReviewController : ControllerBase
     {
         private readonly IReviewService _reviewService;
@@ -21,7 +21,7 @@ namespace BackendEcommerce.Presentation.Controllers
         /// (Public) Lấy danh sách review cho 1 sản phẩm
         /// </summary>
         /// <param name="productId">ID của sản phẩm (Lấy từ URL route)</param>
-        [HttpGet] // <-- Chỉ cần [HttpGet] vì route đã ở trên
+        [HttpGet("products/{productId}/reviews")] // <-- Chỉ cần [HttpGet] vì route đã ở trên
         [AllowAnonymous] // Ai cũng xem được
         [ProducesResponseType(typeof(ApiResponseDTO<List<ReviewProductResponseDto>>), 200)]
         public async Task<ActionResult<ApiResponseDTO<List<ReviewProductResponseDto>>>> GetProductReviews(int productId)

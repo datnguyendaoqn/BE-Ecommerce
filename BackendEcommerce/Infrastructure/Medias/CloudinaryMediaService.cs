@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Services;
+﻿using BackendEcommerce.Application.Shared.Contracts;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 namespace BackendEcommerce.Infrastructure.Medias

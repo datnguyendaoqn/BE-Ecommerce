@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Caching;
+﻿using BackendEcommerce.Application.Shared.Contracts;
 using StackExchange.Redis;
 
 namespace BackendEcommerce.Infrastructure.Caching.Redis

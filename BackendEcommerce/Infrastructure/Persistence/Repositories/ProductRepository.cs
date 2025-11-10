@@ -1,6 +1,6 @@
-﻿using BackendEcommerce.Application.Products.DTOs;
+﻿using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.Products.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
-using BackendEcommerce.Domain.Contracts.Persistence;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;

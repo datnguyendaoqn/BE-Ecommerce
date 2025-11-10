@@ -1,6 +1,5 @@
-﻿using BackendEcommerce.Application.Auth.DTOs;
-using BackendEcommerce.Domain.Contracts.Caching;
-using BackendEcommerce.Domain.Contracts.Email;
+﻿using BackendEcommerce.Application.Features.Auth.DTOs;
+using BackendEcommerce.Application.Shared.Contracts;
 using BackendEcommerce.Domain.Email;
 
 namespace BackendEcommerce.Domain.Otp

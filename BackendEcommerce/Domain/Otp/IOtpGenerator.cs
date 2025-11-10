@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Application.Auth.DTOs;
+﻿using BackendEcommerce.Application.Features.Auth.DTOs;
 
 namespace BackendEcommerce.Domain.Otp
 {

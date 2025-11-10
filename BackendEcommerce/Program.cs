@@ -14,7 +14,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 // 2. Đăng ký dịch vụ từ các Layer
 builder.Services
-    .AddApplicationServices()
+    .AddApplicationServices(builder.Configuration)
     .AddDomainServices()
     .AddInfrastructureServices(builder.Configuration); // Truyền IConfiguration vào
 

@@ -1,4 +1,4 @@
-﻿using BackendEcommerce.Domain.Contracts.Persistence;
+﻿using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
@@ -29,9 +29,9 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(v => v.Id == variantId);
         }
 
-        public void Add(ProductVariant variant)
+        public async Task AddAsync(ProductVariant variant)
         {
-            _context.ProductVariants.Add(variant);
+            _context.ProductVariants.AddAsync(variant);
         }
 
         public void Update(ProductVariant variant)
@@ -42,6 +42,17 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         public void Delete(ProductVariant variant)
         {
             _context.ProductVariants.Remove(variant);
+        }
+        public async Task<bool> IsSkuExistsAsync(string sku)
+        {
+            // Check SKU không phân biệt chữ hoa/thường
+            return await _context.ProductVariants
+                .AnyAsync(v => v.SKU.ToLower() == sku.ToLower());
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
     }
 }

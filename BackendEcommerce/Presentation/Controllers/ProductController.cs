@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Application.Products;
-using BackendEcommerce.Application.Products.DTOs;
+﻿using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.Products.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace BackendEcommerce.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/product")]
+    [Route("api/products")]
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -134,6 +134,41 @@ namespace BackendEcommerce.Presentation.Controllers
             }
 
             // 4. Trả về 200 OK (với DTO "nhẹ" - UpdateProductResponseDto)
+            return Ok(response);
+        }
+        //
+        //
+        // === CHỨC NĂNG 4B: THÊM VARIANT MỚI ===
+        [HttpPost("{productId}/variants")]
+        [Authorize(Roles = "seller")]
+        [Consumes("multipart/form-data")] // QUAN TRỌNG: Vì có IFormFile
+        public async Task<ActionResult<ApiResponseDTO<ProductVariantDetailDto>>> AddVariant(
+            int productId,
+            [FromForm] AddVariantRequestDto dto)
+        {
+            // 1. Lấy SellerId từ Token
+            var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sellerIdString, out var sellerId))
+            {
+                return Unauthorized(new ApiResponseDTO<ProductVariantDetailDto> { Message = "Invalid token." });
+            }
+
+            // 2. Giao việc cho Service (đã bao gồm Transaction)
+            var response = await _productService.AddVariantAsync(productId, dto, sellerId);
+
+            // 3. Dịch kết quả (Theo khuôn mẫu của bạn)
+            if (!response.IsSuccess)
+            {
+                return response.Code switch
+                {
+                    400 => BadRequest(response),          // Lỗi (SKU, Size/Color)
+                    403 => StatusCode(403, response), // Cấm (Không sở hữu)
+                    404 => NotFound(response),            // Không tìm thấy
+                    _ => StatusCode(500, response)    // Lỗi (Transaction, Upload)
+                };
+            }
+
+            // Trả về 200 OK (hoặc 201 Created) với DTO "nặng"
             return Ok(response);
         }
         //

@@ -1,5 +1,5 @@
-﻿using BackendEcommerce.Application.Auth;
-using BackendEcommerce.Application.Auth.DTOs;
+﻿using BackendEcommerce.Application.Features.Auth.Contracts;
+using BackendEcommerce.Application.Features.Auth.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Mvc;
