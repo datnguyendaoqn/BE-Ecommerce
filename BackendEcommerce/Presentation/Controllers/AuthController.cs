@@ -2,10 +2,12 @@
 using BackendEcommerce.Application.Features.Auth.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resend;
 using System.Net.Mail;
+using System.Security.Claims;
 
 namespace BackendEcommerce.Presentation.Controllers
 {
@@ -48,6 +50,24 @@ namespace BackendEcommerce.Presentation.Controllers
         {
             var result = await _authService.LoginWithOtpAsync(dto, dto.Otp);
             return result.IsSuccess ? Ok(result) : BadRequest(result);
+        }
+        [HttpGet("me")]
+        [Authorize] // BẮT BUỘC Đăng nhập
+        public async Task<ActionResult<ApiResponseDTO<AuthMeResponseDto>>> GetMe()
+        {
+            var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (customerId == null)
+            {
+                return Unauthorized(new ApiResponseDTO<string>
+                {
+                    IsSuccess = false,
+                    Code = 401,
+                    Message = "Unauthorized"
+                });
+            }
+                var response = await _authService.GetMeAsync(int.Parse(customerId));
+
+            return Ok(response);
         }
     }
 }

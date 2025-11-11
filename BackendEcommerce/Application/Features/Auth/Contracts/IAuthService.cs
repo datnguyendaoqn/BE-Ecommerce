@@ -10,5 +10,7 @@ namespace BackendEcommerce.Application.Features.Auth.Contracts
         Task<ApiResponseDTO<LoginResponseDTO?>> LoginWithOtpAsync(LoginWithOtpDTO dto, string? ipAddress);
         Task<ApiResponseDTO<string>> RequestRegisterOtpAsync(RequestRegisterOtpDTO dto);
         Task<ApiResponseDTO<LoginResponseDTO>> RegisterAsync(RegisterRequestDTO dto, string? ipAddress);
+        //(API "Nhanh") Lấy Trạng thái Ban đầu (User + Cart Count)
+        Task<ApiResponseDTO<AuthMeResponseDto>> GetMeAsync(int customerId);
     }
 }

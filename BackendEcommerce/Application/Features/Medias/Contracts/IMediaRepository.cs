@@ -13,6 +13,7 @@ namespace BackendEcommerce.Application.Features.Medias.Contracts
         void Update(Media media);
         void Delete(Media media);
         void DeleteRange(IEnumerable<Media> mediaItems);
+        Task<Media?> GetMediaForVariantAsync(int variantId);
 
     }
 }
