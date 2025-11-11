@@ -1,6 +1,8 @@
 ﻿// Nhớ using các thư mục con của Application
 using BackendEcommerce.Application.Features.Auth;
 using BackendEcommerce.Application.Features.Auth.Contracts;
+using BackendEcommerce.Application.Features.Carts;
+using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Categories;
 using BackendEcommerce.Application.Features.Categories.Contracts;
 using BackendEcommerce.Application.Features.Medias;
@@ -25,6 +27,7 @@ namespace BackendEcommerce.Application
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IMediaService, MediaService>();
+            services.AddScoped<ICartService, CartService>();
             // 4. Cấu hình Security (JwtHelper)
             var jwtKey = configuration["JWT_KEY"];
             if (string.IsNullOrEmpty(jwtKey))

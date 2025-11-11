@@ -26,6 +26,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         public async Task<ProductVariant?> GetByIdAsync(int variantId)
         {
             return await _context.ProductVariants
+                .Include(v => v.Product)
                 .FirstOrDefaultAsync(v => v.Id == variantId);
         }
 
@@ -67,6 +68,13 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             return await _context.ProductVariants
                 .Where(v => v.ProductId == productId)
                 .AsNoTracking() // Chỉ đọc để tính MinPrice
+                .ToListAsync();
+        }
+        public async Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds)
+        {
+            return await _context.ProductVariants
+                .Where(v => variantIds.Contains(v.Id))
+                .Include(v => v.Product) // (Cũng cần Include Product)
                 .ToListAsync();
         }
     }

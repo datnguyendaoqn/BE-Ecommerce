@@ -33,6 +33,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         /// (Dùng để tính toán lại MinPrice)
         /// </summary>
         Task<List<ProductVariant>> GetVariantsByProductIdAsync(int productId);
+        Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds);
 
 
     }

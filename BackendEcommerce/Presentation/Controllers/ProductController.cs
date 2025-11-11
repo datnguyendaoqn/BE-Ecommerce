@@ -38,10 +38,10 @@ namespace BackendEcommerce.Presentation.Controllers
 
             if (!response.IsSuccess)
             {
-                return response.Code 
+                return response.Code
                 switch
                 {
-                    403 => StatusCode(403,response),
+                    403 => StatusCode(403, response),
                     404 => StatusCode(404, response),
                     500 => StatusCode(500, response),
                     _ => BadRequest(response)
@@ -103,7 +103,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
         [HttpPut("{productId}")]
         [Authorize(Roles = "seller")]
-        public async Task<ActionResult<ApiResponseDTO<UpdateProductResponseDto>>> UpdateProduct(int productId,[FromBody] UpdateProductRequestDto dto)
+        public async Task<ActionResult<ApiResponseDTO<UpdateProductResponseDto>>> UpdateProduct(int productId, [FromBody] UpdateProductRequestDto dto)
         {
             // 1. Lấy SellerId từ Token
             var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -222,9 +222,9 @@ namespace BackendEcommerce.Presentation.Controllers
         }
         // (Sau này chúng ta sẽ thêm [HttpGet("{id}")]
         // để gọi hàm GetProductDetailForBuyerAsync tại đây)
-    }
-     // === CHỨC NĂNG MỚI: XÓA PRODUCT ===
-    [HttpDelete("{productId}")]
+
+        // === CHỨC NĂNG MỚI: XÓA PRODUCT ===
+        [HttpDelete("{productId}")]
         [Authorize(Roles = "seller")]
         public async Task<ActionResult<ApiResponseDTO<string>>> DeleteProduct(int productId)
         {
@@ -253,3 +253,4 @@ namespace BackendEcommerce.Presentation.Controllers
             return Ok(response);
         }
     }
+}
