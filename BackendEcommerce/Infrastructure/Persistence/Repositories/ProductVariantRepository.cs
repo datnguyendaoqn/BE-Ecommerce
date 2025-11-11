@@ -54,5 +54,20 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         {
             await _context.SaveChangesAsync();
         }
+        public async Task<int> CountByProductIdAsync(int productId)
+        {
+            // (Sau này nếu dùng Xóa Mềm, phải thêm .Where(v => v.Status == "active"))
+            return await _context.ProductVariants
+                .CountAsync(v => v.ProductId == productId);
+        }
+
+        public async Task<List<ProductVariant>> GetVariantsByProductIdAsync(int productId)
+        {
+            // (Sau này nếu dùng Xóa Mềm, phải thêm .Where(v => v.Status == "active"))
+            return await _context.ProductVariants
+                .Where(v => v.ProductId == productId)
+                .AsNoTracking() // Chỉ đọc để tính MinPrice
+                .ToListAsync();
+        }
     }
 }

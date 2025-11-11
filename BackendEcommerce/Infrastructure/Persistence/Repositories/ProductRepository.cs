@@ -74,6 +74,13 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 
         //
         //
+        public void Delete(Product product)
+        {
+            _context.Products.Remove(product);
+        }
+        //
+        //
+
         public async Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query)
         {
             // 1. Bắt đầu IQueryable
