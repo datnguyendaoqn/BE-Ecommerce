@@ -241,7 +241,7 @@ namespace BackendEcommerce.Application.Features.Products
                 {
                     IsSuccess = false,
                     Code = 500,
-                    Message = $"An internal error occurred: {ex.Message}"
+                    Message = $"An internal error occurred: {ex.InnerException?.Message ?? ex.ToString()}"
                 };
             }
         }
@@ -910,7 +910,7 @@ namespace BackendEcommerce.Application.Features.Products
                 return new ApiResponseDTO<PagedListResponseDto<ProductCardDto>>
                 {
                     IsSuccess = false,
-                    Code = 500,
+                    Code = 500, 
                     Message = "Lỗi hệ thống khi lấy danh sách sản phẩm."
                 };
             }

@@ -32,7 +32,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 
         public async Task AddAsync(ProductVariant variant)
         {
-            _context.ProductVariants.AddAsync(variant);
+            await _context.ProductVariants.AddAsync(variant);
         }
 
         public void Update(ProductVariant variant)

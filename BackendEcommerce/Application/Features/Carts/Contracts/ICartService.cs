@@ -28,5 +28,6 @@ namespace BackendEcommerce.Application.Features.Carts.Contracts
         /// Trả về số lượng item MỚI.
         /// </summary>
         Task<ApiResponseDTO<int>> DeleteItemAsync(int customerId, int variantId);
+        Task<ApiResponseDTO<int>> ClearCartAsync(int customerId);
     }
 }

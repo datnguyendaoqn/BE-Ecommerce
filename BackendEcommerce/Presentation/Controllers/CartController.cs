@@ -39,7 +39,7 @@ namespace BackendEcommerce.Presentation.Controllers
         /// (Gạch 2) API Thêm/Sửa (Nhanh)
         /// Thêm mới, hoặc Cộng dồn, hoặc Cập nhật Số lượng
         /// </summary>
-        [HttpPost("items")]
+        [HttpPost]
         public async Task<ActionResult<ApiResponseDTO<int>>> AddOrUpdateItem(
             [FromBody] AddCartItemRequestDto dto)
         {
@@ -69,6 +69,17 @@ namespace BackendEcommerce.Presentation.Controllers
             var response = await _cartService.DeleteItemAsync(customerId, variantId);
 
             // Trả về 200 OK với (Count) mới
+            return Ok(response);
+        }
+        [HttpDelete] 
+        public async Task<ActionResult<ApiResponseDTO<int>>> ClearMyCart()
+        {
+            var customerId = GetCurrentCustomerId();
+
+            // Gọi hàm Service mới
+            var response = await _cartService.ClearCartAsync(customerId);
+
+            // (API này chỉ trả về "Count" mới, luôn là 0)
             return Ok(response);
         }
         // (Hàm trợ giúp lấy CustomerId từ Token)

@@ -201,5 +201,24 @@ namespace BackendEcommerce.Application.Features.Carts
             // 5. Trả về Giỏ hàng (đã "refresh")
             return new ApiResponseDTO<CartSnapshotDto> { IsSuccess = true, Data = cart };
         }
+
+        /// (API 6: Xóa tất cả)
+        /// </summary>
+        public async Task<ApiResponseDTO<int>> ClearCartAsync(int customerId)
+        {
+            var key = GetCartKey(customerId);
+
+            // 1. (Đọc Redis) Lấy key về để check xem nó có tồn tại không
+            var cartExists = await _redisDb.KeyExistsAsync(key);
+
+            if (cartExists)
+            {
+                // 2. (Ghi Redis) Xóa Key
+                await _redisDb.KeyDeleteAsync(key);
+            }
+
+            // 3. (Trả về "Count" - luôn là 0)
+            return new ApiResponseDTO<int> { IsSuccess = true, Data = 0 };
+        }
     }
 }
