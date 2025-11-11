@@ -77,5 +77,22 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             // Chỉ cần đánh dấu là "Deleted", SaveChangesAsync sẽ xóa sau
             _context.Media.Remove(media);
         }
+        /// <summary>
+        /// (Mới - Tối ưu) Lấy 1 ảnh duy nhất của Variant
+        /// </summary>
+        public async Task<Media?> GetMediaForVariantAsync(int variantId)
+        {
+            // Bỏ AsNoTracking() vì chúng ta có thể Delete
+            return await _context.Media
+                .FirstOrDefaultAsync(m => m.EntityId == variantId && m.EntityType == "variant");
+        }
+
+        /// <summary>
+        /// (Mới - Sửa lỗi) Xóa nhiều Media item (Xóa Cứng)
+        /// </summary>
+        public void DeleteRange(IEnumerable<Media> mediaItems)
+        {
+            _context.Media.RemoveRange(mediaItems);
+        }
     }
 }

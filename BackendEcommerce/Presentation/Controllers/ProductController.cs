@@ -188,8 +188,68 @@ namespace BackendEcommerce.Presentation.Controllers
             // Trả về 200 OK với PagedListResponseDto<ProductCardDto>
             return Ok(response);
         }
+        // === CHỨC NĂNG 4C: XÓA VARIANT ===
+        [HttpDelete("{productId}/variants/{variantId}")]
+        [Authorize(Roles = "seller")]
+        public async Task<ActionResult<ApiResponseDTO<string>>> DeleteVariant(
+            int productId,
+            int variantId)
+        {
+            // 1. Lấy SellerId từ Token
+            var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sellerIdString, out var sellerId))
+            {
+                return Unauthorized(new ApiResponseDTO<string> { Message = "Invalid token." });
+            }
 
+            // 2. Giao việc cho Service (đã bao gồm Transaction và 2 luồng logic)
+            var response = await _productService.DeleteVariantAsync(productId, variantId, sellerId);
+
+            // 3. Dịch kết quả (Theo khuôn mẫu của bạn)
+            if (!response.IsSuccess)
+            {
+                return response.Code switch
+                {
+                    400 => BadRequest(response),          // Lỗi (Cha-Con)
+                    403 => StatusCode(403, response), // Cấm (Không sở hữu)
+                    404 => NotFound(response),            // Không tìm thấy
+                    _ => StatusCode(500, response)    // Lỗi (Transaction...)
+                };
+            }
+
+            // Trả về 200 OK với Message
+            return Ok(response);
+        }
         // (Sau này chúng ta sẽ thêm [HttpGet("{id}")]
         // để gọi hàm GetProductDetailForBuyerAsync tại đây)
     }
-}
+     // === CHỨC NĂNG MỚI: XÓA PRODUCT ===
+    [HttpDelete("{productId}")]
+        [Authorize(Roles = "seller")]
+        public async Task<ActionResult<ApiResponseDTO<string>>> DeleteProduct(int productId)
+        {
+            // 1. Lấy SellerId từ Token
+            var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sellerIdString, out var sellerId))
+            {
+                return Unauthorized(new ApiResponseDTO<string> { Message = "Invalid token." });
+            }
+
+            // 2. Giao việc cho Service
+            var response = await _productService.DeleteProductAsync(productId, sellerId);
+
+            // 3. Dịch kết quả
+            if (!response.IsSuccess)
+            {
+                return response.Code switch
+                {
+                    403 => StatusCode(403, response), // Cấm (Không sở hữu)
+                    404 => NotFound(response),            // Không tìm thấy
+                    _ => StatusCode(500, response)    // Lỗi (Transaction...)
+                };
+            }
+
+            // Trả về 200 OK với Message
+            return Ok(response);
+        }
+    }
