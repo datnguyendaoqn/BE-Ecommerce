@@ -359,6 +359,7 @@ namespace BackendEcommerce.Application.Features.Products
                         Material = v.Material,
                         Price = v.Price,
                         Quantity = v.Quantity,
+                        IsInStock = v.Quantity > 0,
 
                         // Ánh xạ sang DTO object (nếu có)
                         PrimaryImage = primaryMediaObject == null ? null : new VariantMediaDto

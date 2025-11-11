@@ -28,6 +28,7 @@ namespace BackendEcommerce.Application.Features.Products.DTOs
         public string? Material { get; set; }
         public decimal Price { get; set; }
         public int Quantity { get; set; }
+        public bool IsInStock { get; set; }
         public VariantMediaDto? PrimaryImage { get; set; }
     }
 }

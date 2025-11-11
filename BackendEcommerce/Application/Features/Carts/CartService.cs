@@ -57,61 +57,65 @@ namespace BackendEcommerce.Application.Features.Carts
             }
         }
 
-        // === API 2 & 3 (Lệnh Thêm/Sửa): AddOrUpdateItemAsync ===
+        // === HÀM "CỘNG DỒN" (GIỮ NGUYÊN) ===
+        /// <summary>
+        /// (API 2: Thêm/Sửa)
+        /// DTO.Quantity là "Số lượng muốn THÊM VÀO" (Delta), không phải Số lượng Tuyệt đối.
+        /// </summary>
         public async Task<ApiResponseDTO<int>> AddOrUpdateItemAsync(int customerId, AddCartItemRequestDto dto)
         {
-            // === CỔNG 1: CHECK TỒN KHO (Oracle DB) ===
-            var variant = await _variantRepo.GetByIdAsync(dto.ProductVariantId);
+            // 1. (Đọc Redis) Lấy giỏ hàng HIỆN TẠI
+            var cart = await GetCartSnapshotAsync(customerId);
 
-            // Check 404
+            // 2. (Tính toán) Tìm số lượng HIỆN CÓ trong giỏ
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductVariantId == dto.ProductVariantId);
+            int currentQuantityInCart = (existingItem != null) ? existingItem.Quantity : 0;
+
+            // 3. (Tính toán) Tính TỔNG MỚI mà User muốn
+            int newTotalQuantity = currentQuantityInCart + dto.Quantity; // <-- LOGIC CỘNG DỒN
+
+            // 4. (Check DB) Check Tồn kho
+            var variant = await _variantRepo.GetByIdAsync(dto.ProductVariantId); // (Đã sửa, có Include Product)
             if (variant == null)
             {
                 return new ApiResponseDTO<int> { IsSuccess = false, Code = 404, Message = "Sản phẩm không tồn tại." };
             }
-            // Check 400 (Tồn kho)
-            if (variant.Quantity < dto.Quantity)
+
+            // (Check Tồn kho với TỔNG MỚI, không phải với dto.Quantity)
+            if (variant.Quantity < newTotalQuantity)
             {
-                return new ApiResponseDTO<int> { IsSuccess = false, Code = 400, Message = $"Số lượng tồn kho không đủ (Chỉ còn {variant.Quantity} sản phẩm)." };
+                return new ApiResponseDTO<int> { IsSuccess = false, Code = 400, Message = $"Số lượng tồn kho không đủ (Chỉ còn {variant.Quantity})." };
             }
 
-            // === LOGIC REDIS ===
-            var key = GetCartKey(customerId);
-            var cart = await GetCartSnapshotAsync(customerId); // (Dùng hàm nội bộ ở trên)
-
-            var existingItem = cart.Items.FirstOrDefault(i => i.ProductVariantId == dto.ProductVariantId);
-
+            // 5. (Logic "Cộng dồn" / "Thêm mới")
             if (existingItem != null)
             {
-                // Case B (Cộng dồn/Update): Đã có -> Cập nhật Số lượng
-                // (Vẫn phải check Tồn kho lại 1 lần nữa)
-                if (dto.Quantity > variant.Quantity)
-                {
-                    return new ApiResponseDTO<int> { IsSuccess = false, Code = 400, Message = $"Số lượng tồn kho không đủ (Chỉ còn {variant.Quantity} sản phẩm)." };
-                }
-                existingItem.Quantity = dto.Quantity;
+                // Case A: Đã có -> Cập nhật TỔNG MỚI (Đã sửa từ '=')
+                existingItem.Quantity = newTotalQuantity;
             }
             else
             {
-                // Case A (Thêm mới): Tạo "Snapshot"
-                var media = await _mediaRepo.GetMediaForVariantAsync(dto.ProductVariantId); // (Giả định tiêm IMediaRepo)
-                var snapshotItem = new CartItemSnapshotDto
+                // Case B: Món mới -> "Snapshot" (Sao chép)
+                // (Lấy ảnh "con" (variant) trước)
+                var media = await _mediaRepo.GetMediaForVariantAsync(variant.Id);
+
+                var newItem = new CartItemSnapshotDto
                 {
                     ProductVariantId = variant.Id,
-                    Quantity = dto.Quantity,
-                    // --- Dữ liệu "Snapshot" ---
+                    Quantity = newTotalQuantity, // (Dùng TỔNG MỚI)
                     PriceAtTimeOfAdd = variant.Price,
-                    ProductName = variant.Product.Name, // (Giả định GetByIdAsync đã Include Product)
                     Sku = variant.SKU,
+                    ProductName = variant.Product.Name, // (Sẽ không null vì GetByIdAsync đã Include)
                     ImageUrl = media?.ImageUrl ?? "https://placehold.co/100x100?text=No+Image"
                 };
-                cart.Items.Add(snapshotItem);
+                cart.Items.Add(newItem);
             }
 
-            // Lưu (Ghi đè) Giỏ hàng mới vào Redis
-            var newJsonCart = JsonSerializer.Serialize(cart);
-            await _redisDb.StringSetAsync(key, newJsonCart);
+            // 6. (Ghi Redis)
+            var updatedJson = JsonSerializer.Serialize(cart);
+            await _redisDb.StringSetAsync(GetCartKey(customerId), updatedJson);
 
-            // Trả về (return) CHỈ con số Count (theo yêu cầu)
+            // 7. (Trả về "Count" - theo yêu cầu "Tinh gọn")
             return new ApiResponseDTO<int> { IsSuccess = true, Data = cart.TotalItemsCount };
         }
 
@@ -201,8 +205,8 @@ namespace BackendEcommerce.Application.Features.Carts
             // 5. Trả về Giỏ hàng (đã "refresh")
             return new ApiResponseDTO<CartSnapshotDto> { IsSuccess = true, Data = cart };
         }
-
-        /// (API 6: Xóa tất cả)
+        /// <summary>
+        /// (API 6: Xóa tất cả sản phẩm trong giỏ hàng)
         /// </summary>
         public async Task<ApiResponseDTO<int>> ClearCartAsync(int customerId)
         {
@@ -219,6 +223,61 @@ namespace BackendEcommerce.Application.Features.Carts
 
             // 3. (Trả về "Count" - luôn là 0)
             return new ApiResponseDTO<int> { IsSuccess = true, Data = 0 };
+        }
+        // === HÀM "GHI ĐÈ" (MỚI) ===
+        /// <summary>
+        /// (API MỚI) "Ghi đè" (Set) số lượng tuyệt đối
+        /// (Dùng cho [PUT] /api/cart/items)
+        /// </summary>
+        public async Task<ApiResponseDTO<int>> SetItemQuantityAsync(int customerId, UpdateCartItemRequestDto dto)
+        {
+            // 1. (Check DB) Check Tồn kho
+            var variant = await _variantRepo.GetByIdAsync(dto.ProductVariantId);
+            if (variant == null)
+            {
+                return new ApiResponseDTO<int> { IsSuccess = false, Code = 404, Message = "Sản phẩm không tồn tại." };
+            }
+
+            // (Check Tồn kho với số lượng "Ghi đè" (NewQuantity))
+            if (variant.Quantity < dto.NewQuantity)
+            {
+                return new ApiResponseDTO<int> { IsSuccess = false, Code = 400, Message = $"Số lượng tồn kho không đủ (Chỉ còn {variant.Quantity})." };
+            }
+
+            // 2. (Đọc Redis)
+            var cart = await GetCartSnapshotAsync(customerId);
+
+            // 3. (Logic "Ghi đè")
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductVariantId == dto.ProductVariantId);
+
+            if (existingItem != null)
+            {
+                // Case A: Đã có -> GHI ĐÈ
+                existingItem.Quantity = dto.NewQuantity;
+            }
+            else
+            {
+                // Case B: Món này chưa có trong giỏ? (Lạ, nhưng cứ xử lý)
+                // (Đây là logic "Snapshot" y hệt AddOrUpdateItemAsync)
+                var media = await _mediaRepo.GetMediaForVariantAsync(variant.Id);
+                var newItem = new CartItemSnapshotDto
+                {
+                    ProductVariantId = variant.Id,
+                    Quantity = dto.NewQuantity, // Dùng số lượng Ghi đè
+                    PriceAtTimeOfAdd = variant.Price,
+                    Sku = variant.SKU,
+                    ProductName = variant.Product.Name,
+                    ImageUrl = media?.ImageUrl ?? "https://placehold.co/100x100?text=No+Image"
+                };
+                cart.Items.Add(newItem);
+            }
+
+            // 4. (Ghi Redis)
+            var updatedJson = JsonSerializer.Serialize(cart);
+            await _redisDb.StringSetAsync(GetCartKey(customerId), updatedJson);
+
+            // 5. (Trả về "Count" - theo yêu cầu "Tinh gọn")
+            return new ApiResponseDTO<int> { IsSuccess = true, Data = cart.TotalItemsCount };
         }
     }
 }

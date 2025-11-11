@@ -39,7 +39,7 @@ namespace BackendEcommerce.Presentation.Controllers
         /// (Gạch 2) API Thêm/Sửa (Nhanh)
         /// Thêm mới, hoặc Cộng dồn, hoặc Cập nhật Số lượng
         /// </summary>
-        [HttpPost]
+        [HttpPost("items")]
         public async Task<ActionResult<ApiResponseDTO<int>>> AddOrUpdateItem(
             [FromBody] AddCartItemRequestDto dto)
         {
