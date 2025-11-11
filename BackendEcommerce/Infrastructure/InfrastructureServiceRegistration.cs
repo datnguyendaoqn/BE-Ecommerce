@@ -34,7 +34,9 @@ namespace BackendEcommerce.Infrastructure
                 throw new Exception("Missing Oracle credentials in environment variables.");
 
             services.AddDbContext<EcomDbContext>(options =>
-                options.UseOracle(connectionString)
+                options.UseOracle(connectionString, o => {
+                    o.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion21);
+                })
             );
 
             // Đăng ký Repositories
