@@ -1,10 +1,18 @@
 ﻿// Nhớ using các thư mục con của Application
+using BackendEcommerce.Application.Features.AddressBooks;
+using BackendEcommerce.Application.Features.AddressBooks.Contracts;
 using BackendEcommerce.Application.Features.Auth;
 using BackendEcommerce.Application.Features.Auth.Contracts;
+using BackendEcommerce.Application.Features.Carts;
+using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Categories;
 using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Locations;
+using BackendEcommerce.Application.Features.Locations.Contracts;
 using BackendEcommerce.Application.Features.Medias;
 using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Orders;
+using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Application.Features.Products;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.Reviews;
@@ -25,7 +33,11 @@ namespace BackendEcommerce.Application
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IMediaService, MediaService>();
-            // 4. Cấu hình Security (JwtHelper)
+            services.AddScoped<ICartService, CartService>();
+            services.AddScoped<ILocationService,LocationService>();
+            services.AddScoped<IAddressBookService,AddressBookService>();
+            services.AddScoped<IOrderService,OrderService>();
+            //  Cấu hình Security (JwtHelper)
             var jwtKey = configuration["JWT_KEY"];
             if (string.IsNullOrEmpty(jwtKey))
                 throw new Exception("Missing JWT_KEY in environment variables.");

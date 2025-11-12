@@ -1,5 +1,6 @@
 ﻿using BackendEcommerce.Application.Features.Auth.Contracts;
 using BackendEcommerce.Application.Features.Auth.DTOs;
+using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Domain.Auth;
 using BackendEcommerce.Domain.Otp;
@@ -13,6 +14,7 @@ namespace BackendEcommerce.Application.Features.Auth
         private readonly TokenManager _tokenManager;
         private readonly IOtpGenerator _otpGenerator;
         private readonly IOtpValidator _otpValidator;
+        private readonly ICartService _cartService;
         private readonly PasswordHasher _passwordHasher;
 
         public AuthService(
@@ -21,9 +23,11 @@ namespace BackendEcommerce.Application.Features.Auth
              TokenManager tokenManager,
              IOtpGenerator otpGenerator,
              IOtpValidator otpValidator,
+                ICartService cartService,
              PasswordHasher passwordHasher)
         {
             _accountRepo = accountRepo;
+            _cartService = cartService;
             _userAuth = userAuthenticator;
             _tokenManager = tokenManager;
             _otpGenerator = otpGenerator;
@@ -178,6 +182,26 @@ namespace BackendEcommerce.Application.Features.Auth
             await _otpGenerator.GenerateAndSendAsync(email);
 
             return new ApiResponseDTO<string> { IsSuccess = true, Message = "OTP is sended" };
+        }
+        //
+        //
+        public async Task<ApiResponseDTO<AuthMeResponseDto>> GetMeAsync(int customerId)
+        {
+            // 1. Lấy Giỏ hàng "Snapshot" (Nhanh, chỉ đọc Redis)
+            var cartSnapshot = await _cartService.GetCartSnapshotAsync(customerId);
+
+            // 2. (Sau này lấy thông tin User từ DB)
+
+            // 3. Tạo DTO Trả về (Response)
+            var responseDto = new AuthMeResponseDto
+            {
+                // User = ... (Thông tin User)
+
+                // Chỉ trả về "Count" (theo yêu cầu "Tinh gọn")
+                CartItemCount = cartSnapshot.TotalItemsCount
+            };
+
+            return new ApiResponseDTO<AuthMeResponseDto> { IsSuccess = true, Data = responseDto };
         }
         // === THÊM PHƯƠNG THỨC MỚI: Đăng nhập bằng OTP ===
         public async Task<ApiResponseDTO<LoginResponseDTO?>> LoginWithOtpAsync(LoginWithOtpDTO dto, string? ipAddress)

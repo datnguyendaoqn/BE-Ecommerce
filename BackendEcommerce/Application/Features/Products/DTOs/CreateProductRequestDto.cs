@@ -19,6 +19,7 @@ namespace BackendEcommerce.Application.Features.Products.DTOs
         public List<CreateVariantRequestDto> Variants { get; set; } = new List<CreateVariantRequestDto>();
 
         // We will send product-level images (optional)
+        [Required(ErrorMessage = "Sản phẩm phải có hình")]
         public List<IFormFile>? ProductImages { get; set; }
     }
     public class CreateVariantRequestDto

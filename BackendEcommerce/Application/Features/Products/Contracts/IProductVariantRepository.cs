@@ -23,7 +23,18 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         // (Giả định SaveChangesAsync được gọi từ UnitOfWork hoặc Service)
         Task SaveChangesAsync();
         Task AddAsync(ProductVariant variant);
+        /// <summary>
+        /// (Mới) Đếm số variant "active" của một Product
+        /// </summary>
+        Task<int> CountByProductIdAsync(int productId);
 
-       
+        /// <summary>
+        /// (Mới) Lấy danh sách (chỉ) các variant của 1 Product
+        /// (Dùng để tính toán lại MinPrice)
+        /// </summary>
+        Task<List<ProductVariant>> GetVariantsByProductIdAsync(int productId);
+        Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds);
+
+
     }
 }

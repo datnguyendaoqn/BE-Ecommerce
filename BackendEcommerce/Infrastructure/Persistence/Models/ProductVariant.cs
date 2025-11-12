@@ -18,7 +18,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
         public DateTime? UpdatedAt { get; set; }
         public Product Product { get; set; } = null!;
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
-        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+        //public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

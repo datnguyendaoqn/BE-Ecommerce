@@ -21,6 +21,7 @@ namespace BackendEcommerce.Application.Features.Products
         private readonly IProductVariantRepository _variantRepo;
         private readonly ICategoryRepository _categoryRepo;
         private readonly EcomDbContext _context; // <-- Thêm (chỉ để dùng Transaction)
+        private readonly ILogger<ProductService> _logger;
 
         public ProductService(
             IProductRepository productRepo,
@@ -29,6 +30,7 @@ namespace BackendEcommerce.Application.Features.Products
             IMediaUploadService mediaUploadService,
             IProductVariantRepository variantRepo,
             ICategoryRepository categoryRepo,
+            ILogger<ProductService> logger,
             EcomDbContext context)
         {
             _productRepo = productRepo;
@@ -38,6 +40,7 @@ namespace BackendEcommerce.Application.Features.Products
             _mediaUploadService = mediaUploadService;
             _categoryRepo = categoryRepo;
             _context = context;
+            _logger = logger;
         }
 
         public async Task<ApiResponseDTO<CreateProductResponseDto>> CreateProductAsync(CreateProductRequestDto dto, int sellerId)
@@ -238,7 +241,7 @@ namespace BackendEcommerce.Application.Features.Products
                 {
                     IsSuccess = false,
                     Code = 500,
-                    Message = $"An internal error occurred: {ex.Message}"
+                    Message = $"An internal error occurred: {ex.InnerException?.Message ?? ex.ToString()}"
                 };
             }
         }
@@ -356,6 +359,75 @@ namespace BackendEcommerce.Application.Features.Products
                         Material = v.Material,
                         Price = v.Price,
                         Quantity = v.Quantity,
+                        IsInStock = v.Quantity > 0,
+
+                        // Ánh xạ sang DTO object (nếu có)
+                        PrimaryImage = primaryMediaObject == null ? null : new VariantMediaDto
+                        {
+                            Id = primaryMediaObject.Id,
+                            ImageUrl = primaryMediaObject.ImageUrl ?? ""
+                        }
+                    };
+                }).ToList()
+            };
+
+            return new ApiResponseDTO<ProductDetailResponseDto> { IsSuccess = true, Data = dto };
+        }
+        //
+        //
+        public async Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForCustomerAsync(int productId)
+        {
+            // 1. Lấy dữ liệu "nặng" (Product, Variants, Shop, Category)
+            var product = await _productRepo.GetProductDetailByIdAsync(productId);
+
+            // 2. Check "Tồn tại"
+            if (product == null)
+            {
+                return new ApiResponseDTO<ProductDetailResponseDto>
+                { IsSuccess = false, Code = 404, Message = "Product not found" };
+            }
+            // 4. Lấy dữ liệu "Media" (Chống N+1)
+            // Lấy TẤT CẢ ảnh của "Cha" (Product)
+            var productMedia = await _mediaRepo.GetMediaForEntityAsync(product.Id, "product");
+
+            // Lấy ẢNH CHÍNH của TẤT CẢ "Con" (Variants)
+            var variantIds = product.Variants.Select(v => v.Id).ToList();
+            var variantPrimaryImages = await _mediaRepo.GetPrimaryMediaForEntitiesMapAsync(variantIds, "variant");
+
+            // 5. "Map" (Ánh xạ) sang DTO "Chi tiết"
+            var dto = new ProductDetailResponseDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Brand = product.Brand,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category.Name,
+                ShopId = product.ShopId,
+                Status = product.Status,
+
+                ProductImages = productMedia.Select(m => new ProductMediaDto
+                {
+                    Id = m.Id,
+                    ImageUrl = m.ImageUrl ?? "",
+                    IsPrimary = m.IsPrimary
+                }).ToList(),
+
+                // === SỬA LỖI MAPPING (VARIANT) ===
+                Variants = product.Variants.Select(v => {
+                    // Lấy object Media từ Dictionary
+                    var primaryMediaObject = variantPrimaryImages.GetValueOrDefault(v.Id);
+
+                    return new ProductVariantDetailDto
+                    {
+                        Id = v.Id,
+                        SKU = v.SKU,
+                        VariantSize = v.VariantSize,
+                        Color = v.Color,
+                        Material = v.Material,
+                        Price = v.Price,
+                        Quantity = v.Quantity,
+                        IsInStock = v.Quantity > 0,
 
                         // Ánh xạ sang DTO object (nếu có)
                         PrimaryImage = primaryMediaObject == null ? null : new VariantMediaDto
@@ -636,6 +708,253 @@ namespace BackendEcommerce.Application.Features.Products
         }
         //
         //
+        // === CHỨC NĂNG 4C: XÓA VARIANT (XÓA CỨNG) ===
+
+        public async Task<ApiResponseDTO<string>> DeleteVariantAsync(
+            int productId, int variantId, int sellerId)
+        {
+            // === 1. VALIDATION (Lấy dữ liệu) ===
+            // (Không dùng AsNoTracking() vì chúng ta sẽ xóa/sửa)
+            var product = await _productRepo.GetProductForUpdateAsync(productId);
+            var variant = await _variantRepo.GetByIdAsync(variantId); // (GetByIdAsync mới không dùng AsNoTracking)
+
+            // Check 404 (Product)
+            if (product == null)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 404, Message = $"Product with ID {productId} not found." };
+            }
+            // Check 404 (Variant)
+            if (variant == null)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 404, Message = $"Variant with ID {variantId} not found." };
+            }
+            // Check 400 (Cha-Con)
+            if (variant.ProductId != productId)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 400, Message = $"Variant {variantId} does not belong to Product {productId}." };
+            }
+            // Check 403 (Quyền sở hữu)
+            if (product.Shop.OwnerId != sellerId)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 403, Message = "Forbidden: You do not have permission to delete this variant." };
+            }
+
+            // === 2. BẮT ĐẦU TRANSACTION ===
+            // (Rất quan trọng vì chúng ta xóa/sửa nhiều bảng + Cloudinary)
+            await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
+
+            // List để rollback Cloudinary (nếu DB lỗi)
+            List<Media> mediaToDelete = new List<Media>();
+            string successMessage;
+
+            try
+            {
+                // === 3. LOGIC NGHIỆP VỤ (QUY TẮC 1) ===
+                var variantCount = await _variantRepo.CountByProductIdAsync(productId);
+
+                if (variantCount > 1)
+                {
+                    // === CASE 1: XÓA 1 VARIANT (Không phải cái cuối) ===
+
+                    // a. Lấy media của Variant
+                    mediaToDelete = (await _mediaRepo.GetMediaForEntityAsync(variantId, "variant")).ToList();
+
+                    // b. Xóa Variant + Media (DB)
+                    _mediaRepo.DeleteRange(mediaToDelete);
+                    _variantRepo.Delete(variant);
+
+                    // c. Cập nhật "Cha" (Product)
+                    product.VariantCount--;
+                    var remainingVariants = await _variantRepo.GetVariantsByProductIdAsync(productId);
+
+                    // Tính lại MinPrice (bỏ qua variant vừa xóa)
+                    product.MinPrice = remainingVariants
+                        .Where(v => v.Id != variantId)
+                        .DefaultIfEmpty() // Tránh lỗi nếu list rỗng
+                        .Min(v => (v?.Price ?? 0));
+
+                    _productRepo.Update(product);
+
+                    // d. Lưu DB (Step 1)
+                    await _context.SaveChangesAsync();
+
+                    // e. Xóa Cloudinary (Step 2)
+                    foreach (var media in mediaToDelete)
+                    {
+                        if (media.PublicId != null)
+                            await _mediaUploadService.DeleteImageAsync(media.PublicId);
+                    }
+
+                    successMessage = "Variant deleted successfully.";
+                }
+                else
+                {
+                    // === CASE 2: XÓA VARIANT CUỐI (Tự động xóa Product) ===
+
+                    // a. Lấy TẤT CẢ media (của Cha VÀ Con)
+                    var productMedia = await _mediaRepo.GetMediaForEntityAsync(productId, "product");
+                    var variantMedia = await _mediaRepo.GetMediaForEntityAsync(variantId, "variant");
+                    mediaToDelete = productMedia.Concat(variantMedia).ToList();
+
+                    // b. Xóa Product (DB) -> Sẽ CASCADE xóa Variant
+                    // (Chúng ta KHÔNG cần gọi _variantRepo.Delete(variant))
+                    _productRepo.Delete(product);
+
+                    // c. Xóa Media (DB)
+                    _mediaRepo.DeleteRange(mediaToDelete);
+
+                    // d. Lưu DB (Step 1)
+                    await _context.SaveChangesAsync();
+
+                    
+
+                    successMessage = "Last variant was deleted, which triggered deletion of the parent product.";
+                }
+
+                // === 4. COMMIT TRANSACTION ===
+                await transaction.CommitAsync();
+                // e. Xóa Cloudinary (Step 2)
+
+            }
+               
+            catch (Exception ex)
+            {
+                // === ROLLBACK (Chỉ DB) ===
+                await transaction.RollbackAsync();
+                // (Chúng ta không rollback Cloudinary, vì nếu DB lỗi,
+                // chúng ta thà để "rác" trên Cloudinary còn hơn là mất ảnh)
+
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 500, Message = $"An internal error occurred: {ex.Message}" };
+            }
+            try
+            {
+                // (Chạy song song để tăng tốc)
+                var deleteTasks = mediaToDelete
+                    .Where(m => !string.IsNullOrEmpty(m.PublicId))
+                    .Select(m => _mediaUploadService.DeleteImageAsync(m.PublicId!));
+                await Task.WhenAll(deleteTasks);
+            }
+            catch (Exception cloudEx)
+            {
+                // KHÔNG TRẢ VỀ LỖI 500 CHO USER
+                // User đã XÓA thành công. Đây là lỗi dọn dẹp "mồ côi".
+                _logger.LogError(cloudEx,
+                    "THÀNH CÔNG (DB) nhưng LỖI (Cloudinary): Không dọn dẹp được ảnh mồ côi của ProductID {ProductId}", productId);
+
+                // (Chúng ta vẫn trả về 200 OK, nhưng báo cho Admin/Dev biết)
+                return new ApiResponseDTO<string>
+                {
+                    IsSuccess = true,
+                    Message = "Product deleted from database, but failed to clean up some images on the storage server. Please contact support."
+                };
+            }
+            return new ApiResponseDTO<string> { IsSuccess = true, Message = successMessage };
+
+        }
+        //
+        //
+        // === CHỨC NĂNG MỚI: XÓA PRODUCT ===
+
+        public async Task<ApiResponseDTO<string>> DeleteProductAsync(int productId, int sellerId)
+        {
+            // === 1. VALIDATION (Check 404, 403) ===
+            // (Dùng GetProductForUpdateAsync để EF theo dõi Product)
+            var product = await _productRepo.GetProductForUpdateAsync(productId);
+
+            if (product == null)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 404, Message = $"Product with ID {productId} not found." };
+            }
+
+            if (product.Shop.OwnerId != sellerId)
+            {
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 403, Message = "Forbidden: You do not have permission to delete this product." };
+            }
+
+            // === 2. LẤY DỮ LIỆU CẦN XÓA (ẢNH) ===
+            // (Phải lấy TRƯỚC khi xóa DB, để giữ lại PublicId)
+
+            // a. Lấy ảnh Product (cha)
+            var productMedia = await _mediaRepo.GetMediaForEntityAsync(productId, "product");
+
+            // b. Lấy ảnh Variant (con)
+            var variants = await _variantRepo.GetVariantsByProductIdAsync(productId);
+            var variantIds = variants.Select(v => v.Id).ToList();
+            var variantMediaDict = await _mediaRepo.GetPrimaryMediaForEntitiesMapAsync(variantIds, "variant");
+
+            // c. Gộp chung
+            var allMediaToDelete = new List<Media>(productMedia);
+            allMediaToDelete.AddRange(variantMediaDict.Values);
+
+            // === 3. BẮT ĐẦU TRANSACTION (DB TRƯỚC) ===
+            await using IDbContextTransaction transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // a. Xóa Media (cháu)
+                _mediaRepo.DeleteRange(allMediaToDelete);
+
+                // b. Xóa Product (cha)
+                _productRepo.Delete(product);
+
+                // c. (DATABASE) Tự động CASCADE Xóa Variants (con)
+                // (Như bạn đã nói, DB đã cài đặt ON DELETE CASCADE
+                // từ Product -> ProductVariant)
+
+                // d. Lưu DB
+                await _context.SaveChangesAsync();
+
+                // e. COMMIT! (Chốt DB)
+                await transaction.CommitAsync();
+            }
+            catch (Exception dbEx)
+            {
+                // === ROLLBACK DB ===
+                await transaction.RollbackAsync();
+                _logger.LogError(dbEx, "Lỗi DB khi xóa ProductID {ProductId}", productId);
+                return new ApiResponseDTO<string>
+                { IsSuccess = false, Code = 500, Message = $"An internal database error occurred: {dbEx.Message}" };
+            }
+
+            // === 4. DỌN DẸP CLOUDINARY (SAU KHI DB THÀNH CÔNG) ===
+            // (Theo logic "An toàn tuyệt đối")
+
+            try
+            {
+                // (Chạy song song để tăng tốc)
+                var deleteTasks = allMediaToDelete
+                    .Where(m => !string.IsNullOrEmpty(m.PublicId))
+                    .Select(m => _mediaUploadService.DeleteImageAsync(m.PublicId!));
+
+                await Task.WhenAll(deleteTasks);
+            }
+            catch (Exception cloudEx)
+            {
+                // KHÔNG TRẢ VỀ LỖI 500 CHO USER
+                // User đã XÓA thành công. Đây là lỗi dọn dẹp "mồ côi".
+                _logger.LogError(cloudEx,
+                    "THÀNH CÔNG (DB) nhưng LỖI (Cloudinary): Không dọn dẹp được ảnh mồ côi của ProductID {ProductId}", productId);
+
+                // (Chúng ta vẫn trả về 200 OK, nhưng báo cho Admin/Dev biết)
+                return new ApiResponseDTO<string>
+                {
+                    IsSuccess = true,
+                    Message = "Product deleted from database, but failed to clean up some images on the storage server. Please contact support."
+                };
+            }
+
+            // === 5. HOÀN TẤT ===
+            return new ApiResponseDTO<string> { IsSuccess = true, Message = "Product and all its variants/media were deleted successfully." };
+        }
+        //
+        //
         public async Task<ApiResponseDTO<PagedListResponseDto<ProductCardDto>>> GetProductListForCustomerAsync(ProductListQueryRequestDto query)
         {
           
@@ -660,7 +979,7 @@ namespace BackendEcommerce.Application.Features.Products
                 return new ApiResponseDTO<PagedListResponseDto<ProductCardDto>>
                 {
                     IsSuccess = false,
-                    Code = 500,
+                    Code = 500, 
                     Message = "Lỗi hệ thống khi lấy danh sách sản phẩm."
                 };
             }

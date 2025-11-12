@@ -26,12 +26,21 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         public async Task<ProductVariant?> GetByIdAsync(int variantId)
         {
             return await _context.ProductVariants
+                .Include(v => v.Product)
+                 .ThenInclude(p => p.Shop)
                 .FirstOrDefaultAsync(v => v.Id == variantId);
         }
-
+        public async Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds)
+        {
+            return await _context.ProductVariants
+                .Where(v => variantIds.Contains(v.Id))
+                .Include(v => v.Product) // (Cũng cần Include Product)
+                 .ThenInclude(p => p.Shop)
+                .ToListAsync();
+        }
         public async Task AddAsync(ProductVariant variant)
         {
-            _context.ProductVariants.AddAsync(variant);
+            await _context.ProductVariants.AddAsync(variant);
         }
 
         public void Update(ProductVariant variant)
@@ -54,5 +63,21 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         {
             await _context.SaveChangesAsync();
         }
+        public async Task<int> CountByProductIdAsync(int productId)
+        {
+            // (Sau này nếu dùng Xóa Mềm, phải thêm .Where(v => v.Status == "active"))
+            return await _context.ProductVariants
+                .CountAsync(v => v.ProductId == productId);
+        }
+
+        public async Task<List<ProductVariant>> GetVariantsByProductIdAsync(int productId)
+        {
+            // (Sau này nếu dùng Xóa Mềm, phải thêm .Where(v => v.Status == "active"))
+            return await _context.ProductVariants
+                .Where(v => v.ProductId == productId)
+                .AsNoTracking() // Chỉ đọc để tính MinPrice
+                .ToListAsync();
+        }
+      
     }
 }

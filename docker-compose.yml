@@ -6,6 +6,8 @@ services:
     image: redis:alpine
     # Tên của container khi chạy (để bạn dễ quản lý)
     container_name: ecom-redis
+    # === THÊM MỚI (1): Ra lệnh cho Redis dùng file config ===
+    command: redis-server /usr/local/etc/redis/redis.conf
     # Ánh xạ cổng: "[Cổng máy thật]:[Cổng bên trong container]"
     # Giúp bạn kết nối vào Redis từ máy thật qua cổng 6379
     ports:
@@ -16,6 +18,9 @@ services:
     # Giúp Redis không bị mất dữ liệu khi container bị xóa/restart.
     volumes:
       - redis-data:/data
+      # === THÊM MỚI (2): Ánh xạ file config ===
+      # Ánh xạ file config (máy thật) vào file config (trong Docker)
+      - ./redis-config/redis.conf:/usr/local/etc/redis/redis.conf
 
   # --- DỊCH VỤ 2: APP CỦA BẠN ---
   app:

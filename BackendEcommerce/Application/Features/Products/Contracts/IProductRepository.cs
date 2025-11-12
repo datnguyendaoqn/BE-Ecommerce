@@ -14,6 +14,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         Task<bool> ExistsAsync(int productId);
         void Update(Product product);
         Task<Product?> GetProductForUpdateAsync(int productId);
+        void Delete(Product product);
         Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query);
     }
 

@@ -1,6 +1,9 @@
-﻿using BackendEcommerce.Application.Features.Auth.Contracts;
+﻿using BackendEcommerce.Application.Features.AddressBooks.Contracts;
+using BackendEcommerce.Application.Features.Auth.Contracts;
 using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Locations.Contracts;
 using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.Reviews.Contracts;
 using BackendEcommerce.Application.Shared.Contracts;
@@ -34,7 +37,9 @@ namespace BackendEcommerce.Infrastructure
                 throw new Exception("Missing Oracle credentials in environment variables.");
 
             services.AddDbContext<EcomDbContext>(options =>
-                options.UseOracle(connectionString)
+                options.UseOracle(connectionString, o => {
+                    o.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion21);
+                })
             );
 
             // Đăng ký Repositories
@@ -46,6 +51,10 @@ namespace BackendEcommerce.Infrastructure
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
             services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            services.AddScoped<ILocationRepository,LocationRepository>();
+            services.AddScoped<IAddressBookRepository,AddressBookRepository>();    
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 
             // (Và cấu hình Cloudinary Account từ IConfiguration...)
 
