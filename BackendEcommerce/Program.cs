@@ -4,6 +4,8 @@ using BackendEcommerce.Infrastructure;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using DotNetEnv;
 using Microsoft.OpenApi.Models;
+using BackendEcommerce.Application.Features.SellerRegistration.Contracts;
+using BackendEcommerce.Application.Features.SellerRegistration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,13 +22,14 @@ builder.Services
 
 // 3. Đăng ký các dịch vụ của Framework (Controllers, Swagger, CORS)
 builder.Services.AddControllers();
+builder.Services.AddScoped<ISellerRegistrationService, SellerRegistrationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyHeader()
+              .WithHeaders("Content-Type", "Authorization")
               .AllowAnyMethod();
     });
 });
