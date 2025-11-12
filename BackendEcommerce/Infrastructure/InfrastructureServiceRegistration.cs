@@ -1,0 +1,84 @@
+﻿using BackendEcommerce.Application.Features.AddressBooks.Contracts;
+using BackendEcommerce.Application.Features.Auth.Contracts;
+using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Locations.Contracts;
+using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Orders.Contracts;
+using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.Reviews.Contracts;
+using BackendEcommerce.Application.Shared.Contracts;
+using BackendEcommerce.Infrastructure.Caching.Redis;
+using BackendEcommerce.Infrastructure.Email;
+using BackendEcommerce.Infrastructure.Medias;
+using BackendEcommerce.Infrastructure.Persistence.Data;
+using BackendEcommerce.Infrastructure.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Resend;
+using StackExchange.Redis;
+
+namespace BackendEcommerce.Infrastructure
+{
+    public static class InfrastructureServiceRegistration
+    {
+        public static IServiceCollection AddInfrastructureServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // 1. Cấu hình Persistence (Oracle DB)
+            // Lấy biến môi trường và xây dựng connection string
+            var user = configuration["ORACLE_USER"];
+            var password = configuration["ORACLE_PASSWORD"];
+            var service = configuration["ORACLE_SERVICE"];
+            var host = configuration["ORACLE_HOST"];
+            var port = configuration["ORACLE_PORT"];
+            var connectionString = $"User Id={user};Password={password};Data Source={host}:{port}/{service}";
+
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(password))
+                throw new Exception("Missing Oracle credentials in environment variables.");
+
+            services.AddDbContext<EcomDbContext>(options =>
+                options.UseOracle(connectionString, o => {
+                    o.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion21);
+                })
+            );
+
+            // Đăng ký Repositories
+            services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IShopRepository, ShopRepository>();
+            services.AddScoped<IMediaRepository, MediaRepository>();
+            services.AddScoped<IMediaUploadService, CloudinaryMediaService>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<IReviewRepository, ReviewRepository>();
+            services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            services.AddScoped<ILocationRepository,LocationRepository>();
+            services.AddScoped<IAddressBookRepository,AddressBookRepository>();    
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+
+            // (Và cấu hình Cloudinary Account từ IConfiguration...)
+
+            // 2. Cấu hình Caching (Redis)
+            var redisConnectionString = configuration["REDIS_CONNECTION"];
+            if (string.IsNullOrEmpty(redisConnectionString))
+                throw new Exception("Missing Redis connection string in environment variables.");
+
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+                ConnectionMultiplexer.Connect(redisConnectionString)
+            );
+            services.AddScoped<IOtpRepository, RedisOtpRepository>();
+
+            // 3. Cấu hình Email (Resend)
+            var resendApiKey = configuration["RESEND_APIKEY"];
+            if (string.IsNullOrEmpty(resendApiKey))
+                throw new Exception("Missing Resend API key in environment variables.");
+
+            services.AddSingleton<IResend>(_ => ResendClient.Create(resendApiKey));
+            services.AddScoped<IEmailService, ResendEmailService>();
+
+           
+            return services;
+
+        }
+    }
+}

@@ -1,0 +1,67 @@
+# Nơi định nghĩa tất cả các container sẽ chạy
+services:
+  # --- DỊCH VỤ 1: REDIS ---
+  redis:
+    # Lấy image "redis:alpine" (bản siêu nhẹ) từ Docker Hub
+    image: redis:alpine
+    # Tên của container khi chạy (để bạn dễ quản lý)
+    container_name: ecom-redis
+    # === THÊM MỚI (1): Ra lệnh cho Redis dùng file config ===
+    command: redis-server /usr/local/etc/redis/redis.conf
+    # Ánh xạ cổng: "[Cổng máy thật]:[Cổng bên trong container]"
+    # Giúp bạn kết nối vào Redis từ máy thật qua cổng 6379
+    ports:
+      - "6379:6379"
+    # Lưu trữ dữ liệu:
+    # Gắn một "ổ cứng" (volume) tên là "redis-data"
+    # vào thư mục /data (nơi Redis lưu dữ liệu).
+    # Giúp Redis không bị mất dữ liệu khi container bị xóa/restart.
+    volumes:
+      - redis-data:/data
+      # === THÊM MỚI (2): Ánh xạ file config ===
+      # Ánh xạ file config (máy thật) vào file config (trong Docker)
+      - ./redis-config/redis.conf:/usr/local/etc/redis/redis.conf
+
+  # --- DỊCH VỤ 2: APP CỦA BẠN ---
+  app:
+    # Tên container khi chạy
+    container_name: ecom-app
+    # Thay vì lấy "image" có sẵn, chúng ta "build" từ source
+    build:
+      # Lấy source code ở thư mục hiện tại (dấu ".")
+      context: .
+      # Dùng file "Dockerfile" để build
+      dockerfile: Dockerfile
+    # Ánh xạ cổng: "[Máy thật]:[Container]"
+    # Giúp bạn truy cập app từ http://localhost:8080
+    ports:
+      - "8080:8080"
+    # Rất quan trọng: Khởi động 'app' SAU KHI 'redis' đã chạy
+    depends_on:
+      - redis
+
+    # === PHẦN QUAN TRỌNG: Biến Môi trường ===
+
+    # Tải TẤT CẢ các biến từ file ".env" của bạn
+    # (Chứa ORACLE_USER, JWT_KEY, RESEND_APIKEY...)
+    env_file:
+      - ./BackendEcommerce/.env
+
+    # Ghi đè (override) hoặc thêm các biến cụ thể
+    environment:
+      # Ghi đè biến REDIS_CONNECTION
+      # "redis" là tên của dịch vụ redis ở trên
+      # Bên trong mạng Docker, 'app' có thể gọi 'redis' bằng tên
+      - REDIS_CONNECTION=redis:6379
+
+      # Ghi đè biến ORACLE_HOST
+      # "host.docker.internal" là một tên DNS đặc biệt
+      # trỏ đến "localhost" của MÁY TÍNH THẬT của bạn.
+      # Giúp container "thoát ra" và kết nối với Oracle trên máy bạn.
+      - ORACLE_HOST=host.docker.internal
+      - ASPNETCORE_ENVIRONMENT=Development
+
+# Nơi khai báo "ổ cứng" ảo (virtual disk)
+volumes:
+  # Khai báo "ổ cứng" tên là redis-data
+  redis-data:
