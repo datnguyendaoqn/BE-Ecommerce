@@ -27,9 +27,17 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         {
             return await _context.ProductVariants
                 .Include(v => v.Product)
+                 .ThenInclude(p => p.Shop)
                 .FirstOrDefaultAsync(v => v.Id == variantId);
         }
-
+        public async Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds)
+        {
+            return await _context.ProductVariants
+                .Where(v => variantIds.Contains(v.Id))
+                .Include(v => v.Product) // (Cũng cần Include Product)
+                 .ThenInclude(p => p.Shop)
+                .ToListAsync();
+        }
         public async Task AddAsync(ProductVariant variant)
         {
             await _context.ProductVariants.AddAsync(variant);
@@ -70,12 +78,6 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 .AsNoTracking() // Chỉ đọc để tính MinPrice
                 .ToListAsync();
         }
-        public async Task<List<ProductVariant>> GetVariantsByIdsAsync(List<int> variantIds)
-        {
-            return await _context.ProductVariants
-                .Where(v => variantIds.Contains(v.Id))
-                .Include(v => v.Product) // (Cũng cần Include Product)
-                .ToListAsync();
-        }
+      
     }
 }

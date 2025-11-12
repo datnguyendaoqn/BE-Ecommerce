@@ -15,5 +15,7 @@
         /// Giá tại thời điểm thêm vào giỏ
         /// </summary>
         public decimal PriceAtTimeOfAdd { get; set; }
+        public int ShopId { get; set; }
+        public string ShopName { get; set; } = string.Empty;
     }
 }

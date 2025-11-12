@@ -15,7 +15,7 @@ namespace BackendEcommerce.Application.Features.Carts.Contracts
         /// (Chậm & Mới) Lấy giỏ hàng VÀ "Refresh" (Đồng bộ) với Oracle DB.
         /// (Dùng cho [GET] /api/cart - Trang Giỏ hàng đầy đủ)
         /// </summary>
-        Task<ApiResponseDTO<CartSnapshotDto>> GetAndRefreshCartAsync(int customerId);
+        Task<ApiResponseDTO<GroupedCartResponseDto>> GetAndRefreshCartAsync(int customerId);
 
         /// <summary>
         /// (Nhanh - Check DB) Thêm/Cập nhật một món hàng.
@@ -36,5 +36,7 @@ namespace BackendEcommerce.Application.Features.Carts.Contracts
         /// (API 6: Xóa tất cả sản phẩm trong giỏ hàng)
         /// </summary>
         Task<ApiResponseDTO<int>> ClearCartAsync(int customerId);
+
+        Task RemoveItemsFromCartAsync(int customerId, List<int> variantIdsToRemove);
     }
 }
