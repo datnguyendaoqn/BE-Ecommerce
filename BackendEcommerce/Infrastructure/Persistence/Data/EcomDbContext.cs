@@ -23,6 +23,12 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<DeliveryReview> DeliveryReviews { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<AdministrativeRegion> AdministrativeRegions { get; set; }
+        public DbSet<AdministrativeUnit> AdministrativeUnits { get; set; }
+        public DbSet<Province> Provinces { get; set; }
+        public DbSet<District> Districts { get; set; }
+        public DbSet<Ward> Wards { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -147,7 +153,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
 
                 entity.Property(p => p.ReviewCount).HasColumnName("REVIEW_COUNT").HasDefaultValue(0);
 
-                entity.Property(p => p.AverageRating).HasColumnName("AVERAGE_RATING").HasDefaultValue(0.0).HasPrecision(3,2);
+                entity.Property(p => p.AverageRating).HasColumnName("AVERAGE_RATING").HasDefaultValue(0.0).HasPrecision(3, 2);
             });
 
             // ===============================
@@ -219,21 +225,63 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             // Orders
             // ===============================
-            modelBuilder.Entity<Order>(entity =>
+            modelBuilder.Entity<Order>(builder =>
             {
-                entity.ToTable("ORDERS");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("ID");
-                entity.Property(e => e.UserId).HasColumnName("USER_ID");
-                entity.Property(e => e.Status).HasColumnName("STATUS");
-                entity.Property(e => e.Total).HasColumnName("TOTAL").HasPrecision(12, 2);
-                entity.Property(e => e.ShippingAddressId).HasColumnName("SHIPPING_ADDRESS_ID");
-                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
-                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
-                entity.Property(o => o.CancellationReason).HasColumnName("CANCELLATION_REASON");
-                entity.HasMany(o => o.OrderItems).WithOne(oi => oi.Order).HasForeignKey(oi => oi.OrderId);
-                entity.HasMany(o => o.Payments).WithOne(p => p.Order).HasForeignKey(p => p.OrderId);
-                entity.HasMany(o => o.DeliveryReviews).WithOne(dr => dr.Order).HasForeignKey(dr => dr.OrderId);
+                builder.ToTable("ORDERS");
+                builder.HasKey(o => o.Id);
+
+                // Cấu hình FK đến User
+                builder.HasOne(o => o.User)
+                    .WithMany(o => o.Orders) // (Giả định User không cần list Orders)
+                    .HasForeignKey(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict); // (Không cho xóa User nếu còn Order)
+                builder.Property(o => o.UserId).HasColumnName("USERID");
+
+                builder.Property(o => o.Status)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.PaymentMethod)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.TotalAmount)
+                    .HasColumnType("NUMBER(18,2)");
+
+                // === CẤU HÌNH CÁC CỘT SNAPSHOT ĐỊA CHỈ ===
+
+                builder.Property(o => o.Shipping_FullName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.Shipping_Phone)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.Shipping_AddressLine)
+                    .HasMaxLength(500)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.Shipping_Ward)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.Shipping_District)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(o => o.Shipping_City)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .IsRequired();
+
             });
 
             // ===============================
@@ -257,17 +305,50 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             // OrderItems
             // ===============================
-            modelBuilder.Entity<OrderItem>(entity =>
+            modelBuilder.Entity<OrderItem>(builder =>
             {
-                entity.ToTable("ORDER_ITEMS");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("ID");
-                entity.Property(e => e.OrderId).HasColumnName("ORDER_ID");
-                entity.Property(e => e.VariantId).HasColumnName("VARIANT_ID");
-                entity.Property(e => e.Quantity).HasColumnName("QUANTITY");
-                entity.Property(e => e.UnitPrice).HasColumnName("UNIT_PRICE").HasPrecision(12, 2);
-                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
-                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                builder.ToTable("ORDER_ITEMS");
+                builder.HasKey(oi => oi.Id);
+
+                // Cấu hình Khóa ngoại (FK) đến Order
+                builder.HasOne(oi => oi.Order)
+                    .WithMany(o => o.OrderItems)
+                    .HasForeignKey(oi => oi.OrderId)
+                    .OnDelete(DeleteBehavior.Cascade); // (Nếu Xóa Order -> Xóa Item)
+                // 1. Cấu hình Khóa ngoại (FK) đến ProductVariant
+                builder.HasOne(oi => oi.Variant)
+                    .WithMany() // (Giả định Variant không cần list OrderItem)
+                    .HasForeignKey(oi => oi.ProductVariantId) // (Dùng cột Nullable)
+                    .IsRequired(false) // (Cho phép Null)
+                    .OnDelete(DeleteBehavior.SetNull); // <-- MẤU CHỐT QUAN TRỌNG NHẤT
+                                                       // (Khi Xóa Cứng Variant -> Cột này = NULL)
+                builder.Property(oi => oi.ProductVariantId).HasColumnName("PRODUCT_VARIANT_ID");
+
+                // 2. Cấu hình các cột Snapshot mới (VARCHAR2 / Non-Unicode)
+                builder.Property(oi => oi.Sku)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.ProductName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false) // (Giả định Tên SP là VARCHAR2)
+                    .IsRequired();
+
+                builder.Property(oi => oi.VariantName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.ImageUrl)
+                    .HasMaxLength(1000)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.PriceAtTimeOfPurchase)
+                    .HasColumnType("NUMBER(18,2)"); // (Hoặc NUMBER(18,2) tùy Oracle)
+
+                // === KẾT THÚC CẤU HÌNH ===
             });
 
             // ===============================
@@ -332,6 +413,200 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                     .HasForeignKey(e => e.AccountId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<AdministrativeRegion>(builder =>
+            {
+                builder.ToTable("ADMINISTRATIVE_REGIONS");
+                builder.HasKey(ar => ar.Id);
+                builder.Property(ar => ar.Id)
+                    .ValueGeneratedNever()
+                    .HasColumnName("ID");
+
+                builder.Property(ar => ar.Name)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME");
+
+                builder.Property(ar => ar.NameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME_EN");
+
+                builder.Property(ar => ar.CodeName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME");
+
+                builder.Property(ar => ar.CodeNameEn)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME_EN");
+            });
+
+            modelBuilder.Entity<AdministrativeUnit>(builder =>
+            {
+                builder.ToTable("ADMINISTRATIVE_UNITS");
+                builder.HasKey(au => au.Id);
+                builder.Property(au => au.Id)
+                    .ValueGeneratedNever()
+                    .HasColumnName("ID");
+
+                builder.Property(au => au.FullName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("FULL_NAME");
+
+                builder.Property(au => au.FullNameEn)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("FULL_NAME_EN");
+
+                builder.Property(au => au.CodeName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME");
+
+                builder.Property(au => au.CodeNameEn)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME_EN");
+
+                builder.Property(au => au.ShortName)
+                    .HasMaxLength(100).IsUnicode(false)
+                    .HasColumnName("SHORT_NAME");
+
+                builder.Property(au => au.ShortNameEn)
+                    .HasMaxLength(100).IsUnicode(false)
+                    .HasColumnName("SHORT_NAME_EN");
+            });
+
+            modelBuilder.Entity<Province>(builder =>
+            {
+                builder.ToTable("PROVINCES");
+                builder.HasKey(p => p.Code);
+                builder.Property(p => p.Code)
+                    .HasMaxLength(20).IsUnicode(false)
+                    .HasColumnName("CODE");
+
+                builder.Property(p => p.Name)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME");
+
+                builder.Property(p => p.NameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME_EN");
+
+                builder.Property(p => p.FullName)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("FULL_NAME");
+
+                builder.Property(p => p.FullNameEn)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("FULL_NAME_EN");
+
+                builder.Property(p => p.CodeName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME");
+
+                builder.Property(p => p.AdministrativeUnitId)
+                    .HasColumnName("ADMINISTRATIVE_UNIT_ID");
+
+                builder.Property(p => p.AdministrativeRegionId)
+                    .HasColumnName("ADMINISTRATIVE_REGION_ID");
+
+                builder.HasOne(p => p.AdministrativeUnit)
+                    .WithMany()
+                    .HasForeignKey(p => p.AdministrativeUnitId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(p => p.AdministrativeRegion)
+                    .WithMany(r => r.Provinces)
+                    .HasForeignKey(p => p.AdministrativeRegionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<District>(builder =>
+            {
+                builder.ToTable("DISTRICTS");
+                builder.HasKey(d => d.Code);
+                builder.Property(d => d.Code)
+                    .HasMaxLength(20).IsUnicode(false)
+                    .HasColumnName("CODE");
+
+                builder.Property(d => d.Name)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME");
+
+                builder.Property(d => d.NameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME_EN");
+
+                builder.Property(d => d.FullName)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("FULL_NAME");
+
+                builder.Property(d => d.FullNameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("FULL_NAME_EN");
+
+                builder.Property(d => d.CodeName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME");
+
+                builder.Property(d => d.AdministrativeUnitId)
+                    .HasColumnName("ADMINISTRATIVE_UNIT_ID");
+
+                builder.Property(d => d.ProvinceCode)
+                    .HasColumnName("PROVINCE_CODE");
+
+                builder.HasOne(d => d.AdministrativeUnit)
+                    .WithMany()
+                    .HasForeignKey(d => d.AdministrativeUnitId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(d => d.Province)
+                    .WithMany(p => p.Districts)
+                    .HasForeignKey(d => d.ProvinceCode)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Ward>(builder =>
+            {
+                builder.ToTable("WARDS");
+                builder.HasKey(w => w.Code);
+                builder.Property(w => w.Code)
+                    .HasMaxLength(20).IsUnicode(false)
+                    .HasColumnName("CODE");
+
+                builder.Property(w => w.Name)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME");
+
+                builder.Property(w => w.NameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("NAME_EN");
+
+                builder.Property(w => w.FullName)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("FULL_NAME");
+
+                builder.Property(w => w.FullNameEn)
+                    .HasMaxLength(255).IsUnicode(false).IsRequired()
+                    .HasColumnName("FULL_NAME_EN");
+
+                builder.Property(w => w.CodeName)
+                    .HasMaxLength(255).IsUnicode(false)
+                    .HasColumnName("CODE_NAME");
+
+                builder.Property(w => w.AdministrativeUnitId)
+                    .HasColumnName("ADMINISTRATIVE_UNIT_ID");
+
+                builder.Property(w => w.DistrictCode)
+                    .HasColumnName("DISTRICT_CODE");
+
+                builder.HasOne(w => w.AdministrativeUnit)
+                    .WithMany()
+                    .HasForeignKey(w => w.AdministrativeUnitId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasOne(w => w.District)
+                    .WithMany(d => d.Wards)
+                    .HasForeignKey(w => w.DistrictCode)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
         }
     }
 }

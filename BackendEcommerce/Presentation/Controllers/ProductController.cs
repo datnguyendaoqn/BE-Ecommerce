@@ -104,15 +104,9 @@ namespace BackendEcommerce.Presentation.Controllers
         [HttpGet("{productId}")] // Ví dụ: GET /api/products/123
         public async Task<ActionResult<ApiResponseDTO<ProductDetailResponseDto>>> GetProductDetail(int productId)
         {
-            // 1. Lấy SellerId từ Token
-            var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(sellerIdString, out var sellerId))
-            {
-                return Unauthorized(new ApiResponseDTO<string> { Message = "Invalid token." });
-            }
 
             // 2. Giao hết logic cho "Quản lý" (Service)
-            var response = await _productService.GetProductDetailForSellerAsync(productId, sellerId);
+            var response = await _productService.GetProductDetailForCustomerAsync(productId);
 
             // 3. Dịch kết quả
             if (!response.IsSuccess)

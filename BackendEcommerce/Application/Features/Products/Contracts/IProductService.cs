@@ -9,6 +9,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         Task<ApiResponseDTO<CreateProductResponseDto>> CreateProductAsync(CreateProductRequestDto dto, int sellerId);
         Task<ApiResponseDTO<List<ProductSummaryResponseDto>>> GetProductsForSellerAsync(int sellerId);
         Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForSellerAsync(int productId, int sellerId);
+        Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForCustomerAsync(int productId);
         Task<ApiResponseDTO<UpdateProductResponseDto>> UpdateProductAsync
             (int productId, UpdateProductRequestDto dto, int sellerId);
         Task<ApiResponseDTO<UpdateProductVariantResponseDto>> UpdateProductVariantAsync
