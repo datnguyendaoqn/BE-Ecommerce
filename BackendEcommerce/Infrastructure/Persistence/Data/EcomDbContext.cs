@@ -76,22 +76,88 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             // ===============================
             // AddressBook
             // ===============================
-            modelBuilder.Entity<AddressBook>(entity =>
+            modelBuilder.Entity<AddressBook>(builder =>
             {
-                entity.ToTable("ADDRESS_BOOK");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("ID");
-                entity.Property(e => e.UserId).HasColumnName("USER_ID");
-                entity.Property(e => e.FullName).HasColumnName("FULL_NAME");
-                entity.Property(e => e.Phone).HasColumnName("PHONE");
-                entity.Property(e => e.AddressLine).HasColumnName("ADDRESS_LINE");
-                entity.Property(e => e.Ward).HasColumnName("WARD");
-                entity.Property(e => e.District).HasColumnName("DISTRICT");
-                entity.Property(e => e.City).HasColumnName("CITY");
-                entity.Property(e => e.IsDefault).HasColumnName("IS_DEFAULT");
-                entity.Property(e => e.CreatedAt).HasColumnName("CREATED_AT");
-                entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
+                builder.ToTable("ADDRESS_BOOKS");
+                builder.HasKey(a => a.Id);
+                builder.Property(a => a.Id).HasColumnName("ID");
+
+                // Cấu hình FK đến User
+                builder.HasOne(a => a.User)
+                    .WithMany(a=>a.AddressBooks) // User không cần list Addresses
+                    .HasForeignKey(a => a.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                builder.Property(a => a.UserId).HasColumnName("USER_ID");
+
+                // Các cột string cũ
+                builder.Property(a => a.FullName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("FULL_NAME");
+
+                builder.Property(a => a.Phone)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("PHONE");
+
+                builder.Property(a => a.AddressLine)
+                    .HasMaxLength(500)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("ADDRESS_LINE");
+                builder.Property(a => a.CreatedAt)
+                    .IsRequired()
+                    .HasColumnName("CREATED_AT");
+                builder.Property(a => a.UpdatedAt).HasColumnName("UPDATED_AT");
+
+                // === CẤU HÌNH CỘT MỚI ===
+
+                // 1. 3 Khóa ngoại (Code)
+                builder.Property(a => a.ProvinceCode)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("PROVINCE_CODE");
+
+                builder.Property(a => a.DistrictCode)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("DISTRICT_CODE");
+
+                builder.Property(a => a.WardCode)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("WARD_CODE");
+
+                // 2. 3 cột "Snapshot" (Tên)
+                builder.Property(a => a.ProvinceName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("PROVINCE_NAME");
+
+                builder.Property(a => a.DistrictName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("DISTRICT_NAME");
+
+                builder.Property(a => a.WardName)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired()
+                    .HasColumnName("WARD_NAME");
+
+                // Flag mặc định
+                builder.Property(a => a.IsDefault)
+                    .IsRequired()
+                    .HasColumnName("IS_DEFAULT");
             });
+
 
             // ===============================
             // Shops
