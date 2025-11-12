@@ -7,9 +7,9 @@
     {
         public int Id { get; set; }
         public int UserId { get; set; }
-        public string? FullName { get; set; }
-        public string? Phone { get; set; }
-        public string? AddressLine { get; set; } // (Số nhà, Tên đường)
+        public string FullName { get; set; }
+        public string Phone { get; set; }
+        public string AddressLine { get; set; } // (Số nhà, Tên đường)
 
         // === BẮT ĐẦU THAY ĐỔI (Kiến trúc "Snapshot" 6 trường) ===
 

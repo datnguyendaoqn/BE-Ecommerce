@@ -294,60 +294,159 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
             modelBuilder.Entity<Order>(builder =>
             {
                 builder.ToTable("ORDERS");
+
                 builder.HasKey(o => o.Id);
 
-                // Cấu hình FK đến User
-                builder.HasOne(o => o.User)
-                    .WithMany(o => o.Orders) // (Giả định User không cần list Orders)
-                    .HasForeignKey(o => o.UserId)
-                    .OnDelete(DeleteBehavior.Restrict); // (Không cho xóa User nếu còn Order)
-                builder.Property(o => o.UserId).HasColumnName("USERID");
+                builder.Property(o => o.Id)
+                    .HasColumnName("ID");
+
+                builder.Property(o => o.UserId)
+                    .HasColumnName("USER_ID");
 
                 builder.Property(o => o.Status)
+                    .HasColumnName("STATUS")
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .IsRequired();
+                builder.Property(o => o.ShopId)
+                    .HasColumnName("SHOP_ID");
 
                 builder.Property(o => o.PaymentMethod)
+                    .HasColumnName("PAYMENT_METHOD")
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.TotalAmount)
+                    .HasColumnName("TOTAL_AMOUNT")
                     .HasColumnType("NUMBER(18,2)");
 
-                // === CẤU HÌNH CÁC CỘT SNAPSHOT ĐỊA CHỈ ===
-
                 builder.Property(o => o.Shipping_FullName)
+                    .HasColumnName("SHIPPING_FULL_NAME")
                     .HasMaxLength(255)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.Shipping_Phone)
+                    .HasColumnName("SHIPPING_PHONE")
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.Shipping_AddressLine)
+                    .HasColumnName("SHIPPING_ADDRESS_LINE")
                     .HasMaxLength(500)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.Shipping_Ward)
+                    .HasColumnName("SHIPPING_WARD")
                     .HasMaxLength(100)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.Shipping_District)
+                    .HasColumnName("SHIPPING_DISTRICT")
                     .HasMaxLength(100)
                     .IsUnicode(false)
                     .IsRequired();
 
                 builder.Property(o => o.Shipping_City)
+                    .HasColumnName("SHIPPING_CITY")
                     .HasMaxLength(100)
                     .IsUnicode(false)
                     .IsRequired();
 
+                builder.Property(o => o.Shipping_Note)
+                    .HasColumnName("SHIPPING_NOTE")
+                    .HasMaxLength(1000)
+                    .IsUnicode(false);
+
+                builder.Property(o => o.CreatedAt)
+                    .HasColumnName("CREATED_AT")
+                    .HasColumnType("TIMESTAMP")
+                    .IsRequired();
+
+                builder.Property(o => o.UpdatedAt)
+                    .HasColumnName("UPDATED_AT")
+                    .HasColumnType("TIMESTAMP");
+                builder.Property(o => o.CancellationReason)
+                    .HasColumnName("CANCELLATION_REASON")
+                    .HasMaxLength(1000)
+                    .IsUnicode(false);
+
+                builder.HasOne(o => o.User)
+                    .WithMany(u => u.Orders)
+                    .HasForeignKey(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                builder.HasOne(o => o.Shop)
+                    .WithMany()
+                    .HasForeignKey(o => o.ShopId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+
+            // ===============================
+            // OrderItems
+            // ===============================
+            modelBuilder.Entity<OrderItem>(builder =>
+            {
+                builder.ToTable("ORDER_ITEMS");
+
+                builder.HasKey(oi => oi.Id);
+
+                builder.Property(oi => oi.Id)
+                    .HasColumnName("ID");
+
+                builder.Property(oi => oi.OrderId)
+                    .HasColumnName("ORDER_ID");
+
+                builder.Property(oi => oi.ProductVariantId)
+                    .HasColumnName("PRODUCT_VARIANT_ID");
+                builder.Property(oi => oi.Quantity).HasColumnName("QUANTITY");
+
+                builder.Property(oi => oi.Sku)
+                    .HasColumnName("SKU")
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.ProductName)
+                    .HasColumnName("PRODUCT_NAME")
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.VariantName)
+                    .HasColumnName("VARIANT_NAME")
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.ImageUrl)
+                    .HasColumnName("IMAGE_URL")
+                    .HasMaxLength(1000)
+                    .IsUnicode(false)
+                    .IsRequired();
+
+                builder.Property(oi => oi.PriceAtTimeOfPurchase)
+                    .HasColumnName("PRICE_AT_TIME_OF_PURCHASE")
+                    .HasColumnType("NUMBER(18,2)");
+                builder.Property(oi=>oi.CreatedAt)
+                .HasColumnName("CREATED_AT");
+                builder.Property(oi => oi.UpdatedAt)
+                    .HasColumnName("UPDATED_AT");
+
+                builder.HasOne(oi => oi.Order)
+                    .WithMany(o => o.OrderItems)
+                    .HasForeignKey(oi => oi.OrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(oi => oi.Variant)
+                    .WithMany()
+                    .HasForeignKey(oi => oi.ProductVariantId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // ===============================
@@ -368,54 +467,6 @@ namespace BackendEcommerce.Infrastructure.Persistence.Data
                 entity.Property(e => e.UpdatedAt).HasColumnName("UPDATED_AT");
             });
 
-            // ===============================
-            // OrderItems
-            // ===============================
-            modelBuilder.Entity<OrderItem>(builder =>
-            {
-                builder.ToTable("ORDER_ITEMS");
-                builder.HasKey(oi => oi.Id);
-
-                // Cấu hình Khóa ngoại (FK) đến Order
-                builder.HasOne(oi => oi.Order)
-                    .WithMany(o => o.OrderItems)
-                    .HasForeignKey(oi => oi.OrderId)
-                    .OnDelete(DeleteBehavior.Cascade); // (Nếu Xóa Order -> Xóa Item)
-                // 1. Cấu hình Khóa ngoại (FK) đến ProductVariant
-                builder.HasOne(oi => oi.Variant)
-                    .WithMany() // (Giả định Variant không cần list OrderItem)
-                    .HasForeignKey(oi => oi.ProductVariantId) // (Dùng cột Nullable)
-                    .IsRequired(false) // (Cho phép Null)
-                    .OnDelete(DeleteBehavior.SetNull); // <-- MẤU CHỐT QUAN TRỌNG NHẤT
-                                                       // (Khi Xóa Cứng Variant -> Cột này = NULL)
-                builder.Property(oi => oi.ProductVariantId).HasColumnName("PRODUCT_VARIANT_ID");
-
-                // 2. Cấu hình các cột Snapshot mới (VARCHAR2 / Non-Unicode)
-                builder.Property(oi => oi.Sku)
-                    .HasMaxLength(100)
-                    .IsUnicode(false)
-                    .IsRequired();
-
-                builder.Property(oi => oi.ProductName)
-                    .HasMaxLength(255)
-                    .IsUnicode(false) // (Giả định Tên SP là VARCHAR2)
-                    .IsRequired();
-
-                builder.Property(oi => oi.VariantName)
-                    .HasMaxLength(255)
-                    .IsUnicode(false)
-                    .IsRequired();
-
-                builder.Property(oi => oi.ImageUrl)
-                    .HasMaxLength(1000)
-                    .IsUnicode(false)
-                    .IsRequired();
-
-                builder.Property(oi => oi.PriceAtTimeOfPurchase)
-                    .HasColumnType("NUMBER(18,2)"); // (Hoặc NUMBER(18,2) tùy Oracle)
-
-                // === KẾT THÚC CẤU HÌNH ===
-            });
 
             // ===============================
             // Reviews

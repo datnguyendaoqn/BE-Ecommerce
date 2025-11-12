@@ -11,6 +11,8 @@ using BackendEcommerce.Application.Features.Locations;
 using BackendEcommerce.Application.Features.Locations.Contracts;
 using BackendEcommerce.Application.Features.Medias;
 using BackendEcommerce.Application.Features.Medias.Contracts;
+using BackendEcommerce.Application.Features.Orders;
+using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Application.Features.Products;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.Reviews;
@@ -34,6 +36,7 @@ namespace BackendEcommerce.Application
             services.AddScoped<ICartService, CartService>();
             services.AddScoped<ILocationService,LocationService>();
             services.AddScoped<IAddressBookService,AddressBookService>();
+            services.AddScoped<IOrderService,OrderService>();
             //  Cấu hình Security (JwtHelper)
             var jwtKey = configuration["JWT_KEY"];
             if (string.IsNullOrEmpty(jwtKey))

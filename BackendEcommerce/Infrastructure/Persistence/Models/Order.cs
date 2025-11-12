@@ -13,6 +13,7 @@
         public string PaymentMethod { get; set; } = "COD"; // (Bổ sung từ file Payment)
 
         public string? CancellationReason { get; set; }
+        public int ShopId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
@@ -28,10 +29,12 @@
         public string Shipping_Ward { get; set; } = string.Empty;
         public string Shipping_District { get; set; } = string.Empty;
         public string Shipping_City { get; set; } = string.Empty;
+        public string? Shipping_Note { get; set; } = string.Empty;
 
 
         // Navigation properties
         public User User { get; set; } = null!;
+        public Shop Shop { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
