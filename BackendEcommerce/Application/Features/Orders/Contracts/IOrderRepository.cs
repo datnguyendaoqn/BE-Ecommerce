@@ -9,7 +9,18 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
         // (Chúng ta cần SaveChangesAsync riêng biệt
         //  để lấy OrderId (ID Đơn hàng) MỚI trước khi tạo (create) OrderItem)
         Task SaveChangesAsync();
-
-        // (Sau này thêm các hàm Get (Lấy), Update (Cập nhật)...)
+        /// <summary>
+        /// Lấy danh sách đơn hàng có phân trang cho một Shop cụ thể.
+        /// </summary>
+        /// <param name="shopId">ID của Shop</param>
+        /// <param name="status">Filter theo trạng thái (null = lấy tất cả)</param>
+        /// <param name="pageNumber">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số lượng item mỗi trang</param>
+        /// <returns>Một Tuple chứa danh sách Order (đã Include Items) và Tổng số lượng (TotalCount)</returns>
+        Task<(IEnumerable<Order> Orders, int TotalCount)> GetOrdersByShopIdAsync(
+            int shopId,
+            string? status,
+            int pageNumber,
+            int pageSize);
     }
 }

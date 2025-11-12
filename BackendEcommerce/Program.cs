@@ -70,6 +70,8 @@ builder.Services.AddSwaggerGen(c =>
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
+builder.Services.AddHttpContextAccessor();
+
 // --- Xây dựng App ---
 var app = builder.Build();
 

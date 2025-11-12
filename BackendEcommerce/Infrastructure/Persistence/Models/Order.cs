@@ -19,8 +19,6 @@
 
         // === BẮT ĐẦU THAY ĐỔI (SNAPSHOT ĐỊA CHỈ) ===
 
-        // (Bỏ: int? ShippingAddressId)
-        // (Bỏ: AddressBook? ShippingAddress)
 
         // (Bổ sung) Sao chép địa chỉ tại thời điểm mua
         public string Shipping_FullName { get; set; } = string.Empty;
