@@ -375,6 +375,74 @@ namespace BackendEcommerce.Application.Features.Products
         }
         //
         //
+        public async Task<ApiResponseDTO<ProductDetailResponseDto>> GetProductDetailForCustomerAsync(int productId)
+        {
+            // 1. Lấy dữ liệu "nặng" (Product, Variants, Shop, Category)
+            var product = await _productRepo.GetProductDetailByIdAsync(productId);
+
+            // 2. Check "Tồn tại"
+            if (product == null)
+            {
+                return new ApiResponseDTO<ProductDetailResponseDto>
+                { IsSuccess = false, Code = 404, Message = "Product not found" };
+            }
+            // 4. Lấy dữ liệu "Media" (Chống N+1)
+            // Lấy TẤT CẢ ảnh của "Cha" (Product)
+            var productMedia = await _mediaRepo.GetMediaForEntityAsync(product.Id, "product");
+
+            // Lấy ẢNH CHÍNH của TẤT CẢ "Con" (Variants)
+            var variantIds = product.Variants.Select(v => v.Id).ToList();
+            var variantPrimaryImages = await _mediaRepo.GetPrimaryMediaForEntitiesMapAsync(variantIds, "variant");
+
+            // 5. "Map" (Ánh xạ) sang DTO "Chi tiết"
+            var dto = new ProductDetailResponseDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Brand = product.Brand,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category.Name,
+                ShopId = product.ShopId,
+                Status = product.Status,
+
+                ProductImages = productMedia.Select(m => new ProductMediaDto
+                {
+                    Id = m.Id,
+                    ImageUrl = m.ImageUrl ?? "",
+                    IsPrimary = m.IsPrimary
+                }).ToList(),
+
+                // === SỬA LỖI MAPPING (VARIANT) ===
+                Variants = product.Variants.Select(v => {
+                    // Lấy object Media từ Dictionary
+                    var primaryMediaObject = variantPrimaryImages.GetValueOrDefault(v.Id);
+
+                    return new ProductVariantDetailDto
+                    {
+                        Id = v.Id,
+                        SKU = v.SKU,
+                        VariantSize = v.VariantSize,
+                        Color = v.Color,
+                        Material = v.Material,
+                        Price = v.Price,
+                        Quantity = v.Quantity,
+                        IsInStock = v.Quantity > 0,
+
+                        // Ánh xạ sang DTO object (nếu có)
+                        PrimaryImage = primaryMediaObject == null ? null : new VariantMediaDto
+                        {
+                            Id = primaryMediaObject.Id,
+                            ImageUrl = primaryMediaObject.ImageUrl ?? ""
+                        }
+                    };
+                }).ToList()
+            };
+
+            return new ApiResponseDTO<ProductDetailResponseDto> { IsSuccess = true, Data = dto };
+        }
+        //
+        //
         public async Task<ApiResponseDTO<UpdateProductResponseDto>> UpdateProductAsync(int productId, UpdateProductRequestDto dto, int sellerId)
         {
             // === BƯỚC 1: VALIDATION (Check 404 - Not Found) ===

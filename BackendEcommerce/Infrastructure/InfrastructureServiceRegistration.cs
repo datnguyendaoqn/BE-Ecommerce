@@ -1,5 +1,6 @@
 ﻿using BackendEcommerce.Application.Features.Auth.Contracts;
 using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.Locations.Contracts;
 using BackendEcommerce.Application.Features.Medias.Contracts;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.Reviews.Contracts;
@@ -48,6 +49,7 @@ namespace BackendEcommerce.Infrastructure
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
             services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            services.AddScoped<ILocationRepository,LocationRepository>();
 
             // (Và cấu hình Cloudinary Account từ IConfiguration...)
 
