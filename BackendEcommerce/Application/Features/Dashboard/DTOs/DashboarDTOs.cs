@@ -38,6 +38,7 @@ namespace BackendEcommerce.Application.Features.Dashboard.DTOs
         {
             public string CategoryName { get; set; }    // Name từ bảng CATEGORIES
             public decimal TotalRevenue { get; set; }   // Tổng doanh thu
+            public int UnitsSold { get; set; }          // Tổng số sản phẩm đã bán
         }
 
     /// <summary>
