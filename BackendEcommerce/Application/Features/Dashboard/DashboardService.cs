@@ -87,7 +87,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                 .Where(oi => oi.Order.CreatedAt >= from && oi.Order.CreatedAt <= to);
 
             // Tính toán song song các chỉ số
-            var revenueTask = itemsInDateRange.SumAsync(oi => oi.Quantity * oi.UnitPrice);
+            var revenueTask = itemsInDateRange.SumAsync(oi => oi.Quantity * oi.PriceAtTimeOfPurchase);
             var unitsSoldTask = itemsInDateRange.SumAsync(oi => oi.Quantity);
             var ordersCountTask = itemsInDateRange.Select(oi => oi.OrderId).Distinct().CountAsync();
             
@@ -119,7 +119,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                 .Select(g => new SalesOverTimeDTO
                 {
                     Date = DateOnly.FromDateTime(g.Key),
-                    Revenue = g.Sum(oi => oi.Quantity * oi.UnitPrice),
+                    Revenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase),
                     OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
                 })
                 .OrderBy(dto => dto.Date)
@@ -140,7 +140,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                     ProductId = g.Key.Id,
                     ProductName = g.Key.Name,
                     UnitsSold = g.Sum(oi => oi.Quantity),
-                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.UnitPrice)
+                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
                 })
                 .OrderByDescending(dto => dto.TotalRevenue)
                 .Take(topN)
@@ -159,7 +159,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                 .Select(g => new CategorySalesDTO
                 {
                     CategoryName = g.Key.Name,
-                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.UnitPrice)
+                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
                 })
                 .OrderByDescending(dto => dto.TotalRevenue)
                 .ToListAsync();
@@ -184,7 +184,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                     CustomerName = (g.Key.User != null) ? g.Key.User.FullName : "N/A",
                     OrderDate = g.Key.CreatedAt,
                     // Tính tổng tiền CHỈ CỦA CÁC SẢN PHẨM THUỘC SHOP NÀY trong đơn hàng đó
-                    TotalAmount = g.Sum(oi => oi.Quantity * oi.UnitPrice), 
+                    TotalAmount = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase), 
                     Status = g.Key.Status
                 })
                 .ToListAsync();

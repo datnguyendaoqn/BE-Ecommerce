@@ -10,6 +10,7 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
         /// (ĐÃ CẬP NHẬT (UPDATED): Logic (Lô-gic) "Tách Đơn hàng (Order)" (Split Order) Đa Cửa hàng (Multi-Shop))
         /// </summary>
         Task<ApiResponseDTO<CreateOrderResponseDto>> CreateOrderAsync(int customerId, CreateOrderRequestDto dto);
+        Task<PagedListResponseDto<OrderSellerResponseDto>> GetShopOrdersAsync(int userId, OrderFilterDto filter);
 
         // (Sau này thêm: GetMyOrdersAsync, GetOrderDetailAsync, CancelOrderAsync...)
     }

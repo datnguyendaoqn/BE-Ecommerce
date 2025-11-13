@@ -6,6 +6,7 @@ using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
+using BackendEcommerce.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace BackendEcommerce.Application.Features.Orders
@@ -19,6 +20,7 @@ namespace BackendEcommerce.Application.Features.Orders
         private readonly IOrderRepository _orderRepo;
         // ... (Constructor (Hàm dựng) và các tiêm (inject) khác giữ nguyên)
         private readonly IOrderItemRepository _orderItemRepo;
+        private readonly IShopRepository _shop;
         private readonly IProductVariantRepository _variantRepo;
         private readonly IAddressBookRepository _addressRepo;
         private readonly ICartService _cartService;
@@ -29,6 +31,7 @@ namespace BackendEcommerce.Application.Features.Orders
             IOrderRepository orderRepo,
             IOrderItemRepository orderItemRepo,
             IProductVariantRepository variantRepo,
+            IShopRepository shop,
             IAddressBookRepository addressRepo,
             ICartService cartService,
             EcomDbContext context,
@@ -38,6 +41,7 @@ namespace BackendEcommerce.Application.Features.Orders
             _orderItemRepo = orderItemRepo;
             _variantRepo = variantRepo;
             _addressRepo = addressRepo;
+            _shop = shop;
             _cartService = cartService;
             _context = context;
             _logger = logger;
@@ -171,7 +175,7 @@ namespace BackendEcommerce.Application.Features.Orders
                     {
                         OrderId = newOrder.Id,
                         Method = dto.PaymentMethod, // "COD"
-                        Status = "Pending",
+                        Status = "pending",
                         Amount = newOrder.TotalAmount,
                         CreatedAt = overallOrderTime
                     };
@@ -191,12 +195,8 @@ namespace BackendEcommerce.Application.Features.Orders
             }
 
             // === 9. DỌN DẸP (CLEANUP) (BÊN NGOÀI GIAO DỊCH (TRANSACTION)) ===
-            // (Chúng ta (backend) (bạn và tôi) KHÔNG (NOT) gọi (call) ClearCartAsync (Xóa Giọt hàng (Cart))
-            //  Chúng ta (backend) (bạn và tôi) phải Xóa (Remove) (Remove) các món hàng (item) đã "tick" (ticked) (ticked))
             try
             {
-                // (Chúng ta (backend) (bạn và tôi) sẽ cần 1 hàm MỚI trong ICartService: 
-                //  ví dụ: `RemoveItemsFromCartAsync(customerId, dto.TickedVariantIds)`)
                 await _cartService.RemoveItemsFromCartAsync(customerId, dto.TickedVariantIds);
             }
             catch (Exception redisEx)
@@ -212,6 +212,58 @@ namespace BackendEcommerce.Application.Features.Orders
             };
 
             return new ApiResponseDTO<CreateOrderResponseDto> { IsSuccess = true, Data = responseDto, Message = "Orders placed successfully." };
+        }
+        public async Task<PagedListResponseDto<OrderSellerResponseDto>> GetShopOrdersAsync(int userId, OrderFilterDto filter)
+        {
+            // 1. Lấy ShopId (Logic cũ)
+            var shop = await _shop.GetByOwnerIdAsync(userId);
+            if (shop == null) throw new Exception("Shop not found"); // Hoặc xử lý lỗi tùy ý
+
+            // 2. Query DB (Repository giữ nguyên logic trả về List và Count)
+            // Lưu ý: Repository nhận vào filter.PageNumber và filter.PageSize từ class cha
+            var (orders, totalCount) = await _orderRepo.GetOrdersByShopIdAsync(
+                shop.Id,
+                filter.Status,
+                filter.PageNumber,
+                filter.PageSize
+            );
+
+            // 3. Map sang DTO (Giữ nguyên logic map)
+            var dtos = orders.Select(o => new OrderSellerResponseDto
+            {
+                Id = o.Id,
+                Status = o.Status,
+                TotalAmount = o.TotalAmount,
+                CreatedAt = o.CreatedAt,
+                ShippingName = o.Shipping_FullName,
+                ShippingAddress=o.Shipping_AddressLine + "," +
+                                o.Shipping_Ward + "," +
+                                o.Shipping_District + "," +
+                                o.Shipping_City,
+                ShippingPhone =  o.Shipping_Phone,
+                PaymentMethod = o.PaymentMethod,
+
+
+                // ... map các trường khác ...
+                Items = o.OrderItems.Select(i => new OrderItemSellerDto
+                {
+                    ProductName = i.ProductName,
+                    VariantName = i.VariantName,
+                    ImageUrl= i.ImageUrl,
+                    Price = i.PriceAtTimeOfPurchase,
+                    Quantity = i.Quantity
+
+                    // ...
+                }).ToList()
+            }).ToList();
+
+            // 4. RETURN: Dùng constructor của PagedListResponseDto bạn đã cung cấp
+            return new PagedListResponseDto<OrderSellerResponseDto>(
+                dtos,
+                totalCount,
+                filter.PageNumber,
+                filter.PageSize
+            );
         }
     }
 }
