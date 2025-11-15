@@ -18,7 +18,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// (Public) Lấy danh sách review cho 1 sản phẩm
+        /// Lấy danh sách review cho 1 sản phẩm
         /// </summary>
         /// <param name="productId">ID của sản phẩm (Lấy từ URL route)</param>
         [HttpGet("products/{productId}/reviews")] // <-- Chỉ cần [HttpGet] vì route đã ở trên

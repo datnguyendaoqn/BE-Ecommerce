@@ -62,6 +62,27 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             // 5. Trả về kết quả
             return (orders, totalCount);
         }
+        /// <summary>
+        /// (MỚI) Triển khai GetOrderByIdWithItemsAsync
+        /// </summary>
+        public async Task<Order?> GetOrderByIdWithItemsAsync(int orderId)
+        {
+            // Lấy 1 đơn, Include Items
+            // KHÔNG dùng AsNoTracking() vì chúng ta sẽ CẬP NHẬT nó
+            return await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+        }
+
+        /// <summary>
+        /// (MỚI) Triển khai Update (đồng bộ)
+        /// </summary>
+        public void Update(Order order)
+        {
+            // Đánh dấu entity là đã thay đổi. EF Core sẽ biết cần phải làm gì
+            // khi SaveChangesAsync() được gọi.
+            _context.Entry(order).State = EntityState.Modified;
+        }
     }
 }
 

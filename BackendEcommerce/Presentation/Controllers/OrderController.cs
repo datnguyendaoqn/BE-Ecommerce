@@ -29,8 +29,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API (Giao diện Lập trình Ứng dụng) CỐT LÕI (CORE)] Đặt hàng (Place Order) (Đa Cửa hàng (Multi-Shop))
-        /// (Dùng Giỏ hàng (Cart) (Redis) và DTO (Input) Địa chỉ (Address))
+        /// Customer tạo đơn hàng mới từ giỏ hàng
         /// </summary>
         [HttpPost("orders")]
         public async Task<ActionResult<ApiResponseDTO<CreateOrderResponseDto>>> CreateOrder(
@@ -53,37 +52,38 @@ namespace BackendEcommerce.Presentation.Controllers
             // (Trả về (Return) 201 Created (hoặc 200 OK) với List (Danh sách) OrderId (ID Đơn hàng) MỚI)
             return Ok(response);
         }
-        [HttpGet("sellers/orders")]
-        public async Task<IActionResult> GetOrders([FromQuery] OrderFilterDto filter)
-        {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        //[Authorize(Roles = "seller")]
+        //[HttpGet("sellers/orders")]
+        //public async Task<IActionResult> GetOrders([FromQuery] OrderFilterDto filter)
+        //{
+        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
-            try
-            {
-                // Gọi Service
-                var pagedResult = await _orderService.GetShopOrdersAsync(userId, filter);
+        //    try
+        //    {
+        //        // Gọi Service
+        //        var pagedResult = await _orderService.GetShopOrdersAsync(userId, filter);
 
-                // Gói vào ApiResponseDTO chuẩn
-                var response = new ApiResponseDTO<PagedListResponseDto<OrderSellerResponseDto>>
-                {
-                    IsSuccess = true,
-                    Code = 200,
-                    Message = "Lấy danh sách đơn hàng thành công",
-                    Data = pagedResult
-                };
+        //        // Gói vào ApiResponseDTO chuẩn
+        //        var response = new ApiResponseDTO<PagedListResponseDto<OrderSellerResponseDto>>
+        //        {
+        //            IsSuccess = true,
+        //            Code = 200,
+        //            Message = "Lấy danh sách đơn hàng thành công",
+        //            Data = pagedResult
+        //        };
 
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                // Xử lý lỗi trả về ApiResponseDTO lỗi
-                return BadRequest(new ApiResponseDTO<object>
-                {
-                    IsSuccess = false,
-                    Code = 400,
-                    Message = ex.Message
-                });
-            }
-        }
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Xử lý lỗi trả về ApiResponseDTO lỗi
+        //        return BadRequest(new ApiResponseDTO<object>
+        //        {
+        //            IsSuccess = false,
+        //            Code = 400,
+        //            Message = ex.Message
+        //        });
+        //    }
+        //}
     }
 }
