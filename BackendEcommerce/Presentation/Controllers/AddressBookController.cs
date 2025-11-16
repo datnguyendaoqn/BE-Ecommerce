@@ -13,7 +13,7 @@ namespace BackendEcommerce.Presentation.Controllers
     /// </summary>
     [Route("api/addresses")]
     [ApiController]
-    [Authorize] // (BẮT BUỘC Đăng nhập)
+    [Authorize(Roles = "customer,seller")] // (BẮT BUỘC Đăng nhập)
     public class AddressBookController : ControllerBase
     {
         private readonly IAddressBookService _addressService;

@@ -1,4 +1,5 @@
-﻿using BackendEcommerce.Application.Features.Orders.Contracts;
+﻿using BackendEcommerce.Application.Features.CustomerOrders.DTOs;
+using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
@@ -71,6 +72,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             // KHÔNG dùng AsNoTracking() vì chúng ta sẽ CẬP NHẬT nó
             return await _context.Orders
                 .Include(o => o.OrderItems)
+                .Include(o=>o.Shop)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
         }
 
@@ -83,6 +85,72 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
             // khi SaveChangesAsync() được gọi.
             _context.Entry(order).State = EntityState.Modified;
         }
+        // === BỔ SUNG HÀM MỚI CHO CUSTOMER ===
+
+        /// <summary>
+        /// Triển khai hàm GetOrdersByUserIdAsync với logic Projection tối ưu
+        /// </summary>
+        public async Task<(IEnumerable<CustomerOrderResponseDto> Orders, int TotalCount)> GetOrdersByUserIdAsync(
+            int userId,
+            string? status,
+            int pageNumber,
+            int pageSize)
+        {
+            // 1. Query cơ sở
+            var query = _context.Orders
+                .AsNoTracking()
+                .Where(o => o.UserId == userId);
+
+            // 2. Filter theo Status
+            if (!string.IsNullOrEmpty(status))
+            {
+                var statusLower = status.ToLower();
+                query = query.Where(o => o.Status.ToLower() == statusLower);
+            }
+
+            // 3. Đếm tổng số lượng (dùng cho phân trang)
+            var totalCount = await query.CountAsync();
+
+            // 4. Áp dụng Sắp xếp, Phân trang và PROJECTION (Phần quan trọng nhất)
+            // Bỏ .Include() và dùng .Select()
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new CustomerOrderResponseDto
+                {
+                    // Map các trường của Order
+                    Id = o.Id,
+                    ShopId = o.ShopId,
+                    ShopName = o.Shop.Name, // EF Core sẽ tự động join bảng Shop khi cần
+                    Status = o.Status,
+                    TotalAmount = o.TotalAmount,
+                    PaymentMethod = o.PaymentMethod,
+                    CreatedAt = o.CreatedAt,
+
+                    // TỐI ƯU 1: Đếm tổng số item con ngay tại DB
+                    TotalItemsCount = o.OrderItems.Count(),
+
+                    // TỐI ƯU 2: Chỉ lấy 2 item đầu tiên từ DB
+                    Items = o.OrderItems
+                        .OrderBy(i => i.Id) // Sắp xếp để lấy 2 item đầu tiên
+                        .Take(2) // Chỉ lấy 2
+                        .Select(i => new CustomerOrderItemDto
+                        {
+                            ProductName = i.ProductName,
+                            VariantName = i.VariantName,
+                            Sku = i.Sku,
+                            Quantity = i.Quantity,
+                            Price = i.PriceAtTimeOfPurchase,
+                            ImageUrl = i.ImageUrl
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            // 5. Trả về
+            return (orders, totalCount);
+        }
     }
 }
+
 

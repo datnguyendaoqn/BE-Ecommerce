@@ -3,6 +3,7 @@ using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Application.Features.Orders.DTOs;
 using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.SellerOrders.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;

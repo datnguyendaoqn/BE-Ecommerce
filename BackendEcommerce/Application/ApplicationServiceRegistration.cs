@@ -7,6 +7,8 @@ using BackendEcommerce.Application.Features.Carts;
 using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Categories;
 using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.CustomerOrders;
+using BackendEcommerce.Application.Features.CustomerOrders.Contracts;
 using BackendEcommerce.Application.Features.Dashboard;
 using BackendEcommerce.Application.Features.Dashboard.Contracts;
 using BackendEcommerce.Application.Features.Locations;
@@ -43,6 +45,7 @@ namespace BackendEcommerce.Application
             services.AddScoped<IOrderService,OrderService>();
             services.AddScoped<IDashboardService,DashboardService>();
             services.AddScoped<ISellerOrderService, SellerOrderService>();
+            services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 
             //  Cấu hình Security (JwtHelper)
             var jwtKey = configuration["JWT_KEY"];

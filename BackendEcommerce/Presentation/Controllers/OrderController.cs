@@ -10,7 +10,7 @@ namespace BackendEcommerce.Presentation.Controllers
 {
     [Route("api")]
     [ApiController]
-    [Authorize] // (BẮT BUỘC Đăng nhập)
+    [Authorize(Roles ="customer,seller")] // (BẮT BUỘC Đăng nhập)
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;

@@ -1,4 +1,5 @@
 ﻿using BackendEcommerce.Application.Features.Orders.DTOs;
+using BackendEcommerce.Application.Features.SellerOrders.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 
 namespace BackendEcommerce.Application.Features.Orders.Contracts

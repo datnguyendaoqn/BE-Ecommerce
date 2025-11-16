@@ -2,6 +2,7 @@
 using BackendEcommerce.Application.Features.Orders.DTOs;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.SellerOrders.Contracts;
+using BackendEcommerce.Application.Features.SellerOrders.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using System.ComponentModel.DataAnnotations;

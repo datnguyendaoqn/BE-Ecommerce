@@ -9,7 +9,7 @@ namespace BackendEcommerce.Presentation.Controllers
 {
     [Route("api/carts")]
     [ApiController]
-    [Authorize] // BẮT BUỘC Đăng nhập 
+    [Authorize(Roles ="customer,seller")] // BẮT BUỘC Đăng nhập 
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
