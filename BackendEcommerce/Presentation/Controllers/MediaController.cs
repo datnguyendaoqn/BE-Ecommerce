@@ -20,7 +20,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [COMMAND] Đặt một ảnh làm ảnh chính (Primary) cho Product.
+        /// Swap một ảnh làm ảnh chính (Primary) cho Product.
         /// </summary>
         [HttpPut("product/{productId}/set-primary/{mediaId}")]
         public async Task<ActionResult<ApiResponseDTO<SetPrimaryMediaResponseDto>>> SetProductPrimaryMedia(

@@ -1,4 +1,5 @@
-﻿using BackendEcommerce.Infrastructure.Persistence.Models;
+﻿using BackendEcommerce.Application.Features.CustomerOrders.DTOs;
+using BackendEcommerce.Infrastructure.Persistence.Models;
 
 namespace BackendEcommerce.Application.Features.Orders.Contracts
 {
@@ -22,5 +23,26 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
             string? status,
             int pageNumber,
             int pageSize);
+        /// <summary>
+        /// (HÀM MỚI) Lấy một đơn hàng duy nhất bằng ID,
+        /// và bao gồm cả các OrderItems liên quan.
+        /// </summary>
+        Task<Order?> GetOrderByIdWithItemsAsync(int orderId);
+
+        /// <summary>
+        /// (HÀM MỚI) Đánh dấu một đơn hàng là đã bị sửa đổi (Modified).
+        /// Hàm này không bất đồng bộ, nó chỉ thay đổi trạng thái của Entity trong DbContext.
+        /// </summary>
+        void Update(Order order);
+        /// <summary>
+        /// Sửa đổi: Hàm này giờ trả về DTO đã được tối ưu (Projection)
+        /// thay vì trả về Entity (Order).
+        /// </summary>
+        Task<(IEnumerable<CustomerOrderResponseDto> Orders, int TotalCount)> GetOrdersByUserIdAsync(
+            int userId,
+            string? status,
+            int pageNumber,
+            int pageSize);
+
     }
 }

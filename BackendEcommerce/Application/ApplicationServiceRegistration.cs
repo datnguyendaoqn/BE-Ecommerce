@@ -7,6 +7,8 @@ using BackendEcommerce.Application.Features.Carts;
 using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Categories;
 using BackendEcommerce.Application.Features.Categories.Contracts;
+using BackendEcommerce.Application.Features.CustomerOrders;
+using BackendEcommerce.Application.Features.CustomerOrders.Contracts;
 using BackendEcommerce.Application.Features.Dashboard;
 using BackendEcommerce.Application.Features.Dashboard.Contracts;
 using BackendEcommerce.Application.Features.Locations;
@@ -19,6 +21,8 @@ using BackendEcommerce.Application.Features.Products;
 using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Features.Reviews;
 using BackendEcommerce.Application.Features.Reviews.Contracts;
+using BackendEcommerce.Application.Features.SellerOrders;
+using BackendEcommerce.Application.Features.SellerOrders.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -40,6 +44,8 @@ namespace BackendEcommerce.Application
             services.AddScoped<IAddressBookService,AddressBookService>();
             services.AddScoped<IOrderService,OrderService>();
             services.AddScoped<IDashboardService,DashboardService>();
+            services.AddScoped<ISellerOrderService, SellerOrderService>();
+            services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 
             //  Cấu hình Security (JwtHelper)
             var jwtKey = configuration["JWT_KEY"];

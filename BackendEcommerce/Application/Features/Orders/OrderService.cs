@@ -3,6 +3,7 @@ using BackendEcommerce.Application.Features.Carts.Contracts;
 using BackendEcommerce.Application.Features.Orders.Contracts;
 using BackendEcommerce.Application.Features.Orders.DTOs;
 using BackendEcommerce.Application.Features.Products.Contracts;
+using BackendEcommerce.Application.Features.SellerOrders.DTOs;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
@@ -74,11 +75,8 @@ namespace BackendEcommerce.Application.Features.Orders
                 return new ApiResponseDTO<CreateOrderResponseDto> { IsSuccess = false, Code = 400, Message = "Only 'COD' is supported." };
             }
 
-            // === 4. CHUẨN BỊ (PREPARE) GHI CHÚ (NOTE) (NOTE) (GIẢI QUYẾT LỖ HỔNG 2) ===
-            // (Chuyển List (Danh sách) Ghi chú (Note) (Note) thành Dictionary (Từ điển) (Lookup (Tra cứu)) (Tra cứu) (Lookup (Tra cứu)) (Tra cứu) (O(1)) (nhanh))
-            var shopNotesLookup = dto.ShopNotes?
-                .ToDictionary(note => note.ShopId, note => note.Note)
-                ?? new Dictionary<int, string?>();
+          
+
 
             var createdOrderIds = new List<int>();
             var overallOrderTime = DateTime.UtcNow;
@@ -89,6 +87,18 @@ namespace BackendEcommerce.Application.Features.Orders
             {
                 // === 6. TÁCH (SPLIT) (DỰA TRÊN CÁC MÓN HÀNG (ITEM) ĐÃ "TICK" (TICKED)) ===
                 var cartGroupedByShop = itemsToCheckout.GroupBy(item => item.ShopId);
+                // === 6. VALIDATE (XÁC THỰC) VÀ CHUẨN BỊ GHI CHÚ (NOTE) (NOTE) (FIX LỖ HỔNG) ===
+                // (Bước 4 mới)
+
+                // 6a. Lấy ra danh sách các ShopId HỢP LỆ (VALID) (VALID) từ giỏ hàng
+                var validShopIdsInThisOrder = cartGroupedByShop.Select(g => g.Key).ToHashSet();
+
+                // 6b. Chỉ xử lý các Ghi chú (Note) (Note) có ShopId nằm trong danh sách HỢP LỆ (VALID) (VALID)
+                var shopNotesLookup = dto.ShopNotes?
+                    .Where(note => validShopIdsInThisOrder.Contains(note.ShopId)) 
+                    .ToDictionary(note => note.ShopId, note => note.Note)
+                    ?? new Dictionary<int, string?>();
+
 
                 // === 7. LẶP (LOOP) QUA TỪNG CỬA HÀNG (SHOP) ĐÃ "TICK" (TICKED) ===
                 foreach (var shopGroup in cartGroupedByShop)
@@ -215,7 +225,7 @@ namespace BackendEcommerce.Application.Features.Orders
         }
         public async Task<PagedListResponseDto<OrderSellerResponseDto>> GetShopOrdersAsync(int userId, OrderFilterDto filter)
         {
-            // 1. Lấy ShopId (Logic cũ)
+            // 1. Lấy ShopId 
             var shop = await _shop.GetByOwnerIdAsync(userId);
             if (shop == null) throw new Exception("Shop not found"); // Hoặc xử lý lỗi tùy ý
 
@@ -249,7 +259,8 @@ namespace BackendEcommerce.Application.Features.Orders
                 {
                     ProductName = i.ProductName,
                     VariantName = i.VariantName,
-                    ImageUrl= i.ImageUrl,
+                    Sku= i.Sku,
+                    ImageUrl = i.ImageUrl,
                     Price = i.PriceAtTimeOfPurchase,
                     Quantity = i.Quantity
 

@@ -1,4 +1,4 @@
-﻿namespace BackendEcommerce.Application.Features.Orders.DTOs
+﻿namespace BackendEcommerce.Application.Features.SellerOrders.DTOs
 {
     public class OrderSellerResponseDto
     {

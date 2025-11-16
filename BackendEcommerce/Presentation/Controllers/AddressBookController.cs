@@ -8,12 +8,12 @@ using System.Security.Claims;
 namespace BackendEcommerce.Presentation.Controllers
 {
     /// <summary>
-    /// API CỐT LÕI (CORE) - Dùng để Quản lý "Sổ Địa chỉ"
+    /// Dùng để Quản lý "Sổ Địa chỉ"
     /// (Điều kiện tiên quyết (Prerequisite) cho "Đặt hàng" (Checkout))
     /// </summary>
     [Route("api/addresses")]
     [ApiController]
-    [Authorize] // (BẮT BUỘC Đăng nhập)
+    [Authorize(Roles = "customer,seller")] // (BẮT BUỘC Đăng nhập)
     public class AddressBookController : ControllerBase
     {
         private readonly IAddressBookService _addressService;
@@ -32,7 +32,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API 1] Lấy TẤT CẢ địa chỉ của tôi
+        /// Lấy TẤT CẢ địa chỉ của tôi
         /// (Dùng cho Trang Checkout (Thanh toán) / Trang Quản lý Sổ Địa chỉ (Address Book))
         /// </summary>
         [HttpGet]
@@ -44,7 +44,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API 2] Tạo địa chỉ mới
+        /// Tạo địa chỉ mới
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<ApiResponseDTO<AddressBookDto>>> CreateAddress(
@@ -61,7 +61,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API 3] Sửa địa chỉ
+        /// Sửa địa chỉ
         /// </summary>
         [HttpPut("{addressId}")]
         public async Task<ActionResult<ApiResponseDTO<AddressBookDto>>> UpdateAddress(
@@ -83,7 +83,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API 4] Xóa địa chỉ
+        /// Xóa địa chỉ
         /// </summary>
         [HttpDelete("{addressId}")]
         public async Task<ActionResult<ApiResponseDTO<string>>> DeleteAddress(int addressId)
@@ -104,7 +104,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// [API 5] Đặt làm địa chỉ Mặc định (Default)
+        /// Đặt làm địa chỉ Mặc định (Default)
         /// </summary>
         [HttpPut("{addressId}/set-default")]
         public async Task<ActionResult<ApiResponseDTO<string>>> SetDefaultAddress(int addressId)

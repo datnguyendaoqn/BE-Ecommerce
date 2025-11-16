@@ -9,7 +9,7 @@ namespace BackendEcommerce.Presentation.Controllers
 {
     [Route("api/carts")]
     [ApiController]
-    [Authorize] // BẮT BUỘC Đăng nhập 
+    [Authorize(Roles ="customer,seller")] // BẮT BUỘC Đăng nhập 
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
@@ -65,7 +65,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// (Gạch 2 - MỚI) API "Nhanh" - "GHI ĐÈ" (Set) số lượng
+        /// "GHI ĐÈ" (Set) số lượng
         /// </summary>
         [HttpPut("items")]
         public async Task<ActionResult<ApiResponseDTO<int>>> SetItemQuantity([FromBody] UpdateCartItemRequestDto dto)
@@ -88,7 +88,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// (Gạch 3) API "Nhanh" - Xóa 1 món hàng khỏi giỏ
+        /// Xóa 1 món hàng khỏi giỏ
         /// </summary>
         [HttpDelete("items/{variantId}")]
         public async Task<ActionResult<ApiResponseDTO<int>>> DeleteItem(int variantId)
@@ -103,7 +103,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
 
         /// <summary>
-        /// (Gạch 5) API "Nhanh" - Xóa TẤT CẢ món hàng khỏi giỏ
+        /// Xóa TẤT CẢ món hàng khỏi giỏ
         /// (Dùng cho nút "Clear Cart" trên Trang Giỏ hàng)
         /// </summary>
         [HttpDelete] 
