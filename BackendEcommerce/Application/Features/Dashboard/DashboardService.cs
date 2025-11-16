@@ -49,7 +49,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
             }
 
             // 3. Tìm Shop tương ứng của User này
-            // (Giả định 1 user (seller) chỉ sở hữu 1 shop)
+            // (Giả định 1 user (seller) chỉ sở hữ                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      u 1 shop)
             var shopId = await _context.Shops
                 .AsNoTracking()
                 .Where(s => s.OwnerId == userId)
@@ -79,7 +79,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                              && oi.Variant.Product.ShopId == shopId); // <-- LỌC THEO SHOP ID
         }
 
-        public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync(DateTime from, DateTime to)
+        public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(DateTime from, DateTime to)
 {
     long shopId = await GetCurrentSellerShopIdAsync(); // Xác thực và lấy Shop ID
 
@@ -114,7 +114,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
         
     // --- KẾT THÚC SỬA LỖI ---
 
-    return new DashboardSummaryDTO
+    return new DashboardSummaryResponse
     {
         // Dùng FirstOrDefaultAsync ở trên có thể trả về null nếu không có đơn hàng nào
         TotalRevenue = shopStats?.TotalRevenue ?? 0,
@@ -124,7 +124,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
     };
 }
 
-    public async Task<IEnumerable<SalesOverTimeDTO>> GetSalesOverTimeAsync(DateTime from, DateTime to)
+    public async Task<IEnumerable<SalesOverTimeResponse>> GetSalesOverTimeAsync(DateTime from, DateTime to)
 {
     long shopId = await GetCurrentSellerShopIdAsync();
 
@@ -144,16 +144,16 @@ namespace BackendEcommerce.Application.Features.Dashboard
     // 3. Khi dữ liệu đã ở trên máy chủ, ta mới dùng .Select() của LINQ-to-Objects
     // để chuyển đổi DateTime (DateKey) sang DateOnly an toàn.
     var salesByDay = salesByDay_Anonymous
-        .Select(g => new SalesOverTimeDTO
+        .Select(g => new SalesOverTimeResponse
         {
-            Date = DateOnly.FromDateTime(g.DateKey), // <-- Hàm này giờ chạy trong C#, không phải SQL
+            Date = g.DateKey.ToString("yyyy-MM-dd"), // <-- Hàm này giờ chạy trong C#, không phải SQL
             Revenue = g.Revenue,
             OrderCount = g.OrderCount
         });
 
     return salesByDay;
 }
-       public async Task<IEnumerable<TopProductDTO>> GetTopSellingProductsAsync(DateTime from, DateTime to, int topN = 5)
+       public async Task<IEnumerable<TopProductResponse>> GetTopSellingProductsAsync(DateTime from, DateTime to, int topN = 5)
 {
     long shopId = await GetCurrentSellerShopIdAsync();
     
@@ -166,7 +166,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
             oi.Variant.Product.Id, 
             oi.Variant.Product.Name 
         }) 
-        .Select(g => new TopProductDTO
+        .Select(g => new TopProductResponse
         {
             ProductId = g.Key.Id,       // Lấy từ Key của GroupBy
             ProductName = g.Key.Name,   // Lấy từ Key của GroupBy
@@ -179,7 +179,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
     
     return topProducts;
 }
-        public async Task<IEnumerable<CategorySalesDTO>> GetSalesByCategoryAsync(DateTime from, DateTime to)
+        public async Task<IEnumerable<CategorySalesResponse>> GetSalesByCategoryAsync(DateTime from, DateTime to)
         {
             long shopId = await GetCurrentSellerShopIdAsync();
             
@@ -189,7 +189,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                 { 
                     oi.Variant.Product.Category.Name 
                 })
-                .Select(g => new CategorySalesDTO
+                .Select(g => new CategorySalesResponse
                 {
                     CategoryName = g.Key.Name,
                     UnitsSold = g.Sum(oi => oi.Quantity),
@@ -201,7 +201,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
             return categorySales;
         }
 
-        public async Task<IEnumerable<RecentOrderDTO>> GetRecentOrdersAsync(int count = 10)
+        public async Task<IEnumerable<RecentOrderResponse>> GetRecentOrdersAsync(int count = 10)
 {
     long shopId = await GetCurrentSellerShopIdAsync();
 
@@ -233,7 +233,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
 
     // 2. Bây giờ, dữ liệu đã ở trong C#. Chúng ta dùng LINQ-to-Objects
     //    để áp dụng logic "??" một cách an toàn mà không bị dịch sang SQL.
-    var recentOrdersForShop = intermediateData.Select(g => new RecentOrderDTO
+    var recentOrdersForShop = intermediateData.Select(g => new RecentOrderResponse
     {
         OrderId = g.Id,
         CustomerName = g.FullName ?? "N/A", // <-- Logic này được C# xử lý

@@ -73,13 +73,13 @@ namespace BackendEcommerce.Presentation.Controllers
         public async Task<IActionResult> GetTopSellingProducts(
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to,
-            [FromQuery] int count = 5)
+            [FromQuery] int topN = 5)
         {
             DateTime toDate = to ?? DateTime.UtcNow;
             DateTime fromDate = from ?? toDate.AddDays(-30);
 
             return await ExecuteServiceCall(() =>
-                _dashboardService.GetTopSellingProductsAsync(fromDate, toDate, count)
+                _dashboardService.GetTopSellingProductsAsync(fromDate, toDate, topN)
             );
         }
 
