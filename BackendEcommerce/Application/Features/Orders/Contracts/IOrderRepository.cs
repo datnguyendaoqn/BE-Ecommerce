@@ -38,7 +38,7 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
         /// Sửa đổi: Hàm này giờ trả về DTO đã được tối ưu (Projection)
         /// thay vì trả về Entity (Order).
         /// </summary>
-        Task<(IEnumerable<CustomerOrderResponseDto> Orders, int TotalCount)> GetOrdersByUserIdAsync(
+        Task<(IEnumerable<Order> Orders, int TotalCount)> GetOrdersByUserIdAsync(
             int userId,
             string? status,
             int pageNumber,

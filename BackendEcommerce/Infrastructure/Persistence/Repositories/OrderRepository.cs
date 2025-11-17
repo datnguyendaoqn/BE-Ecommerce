@@ -90,7 +90,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         /// <summary>
         /// Triển khai hàm GetOrdersByUserIdAsync với logic Projection tối ưu
         /// </summary>
-        public async Task<(IEnumerable<CustomerOrderResponseDto> Orders, int TotalCount)> GetOrdersByUserIdAsync(
+        public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetOrdersByUserIdAsync(
             int userId,
             string? status,
             int pageNumber,
@@ -108,43 +108,16 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 query = query.Where(o => o.Status.ToLower() == statusLower);
             }
 
-            // 3. Đếm tổng số lượng (dùng cho phân trang)
+            // 3. Đếm tổng số lượng
             var totalCount = await query.CountAsync();
 
-            // 4. Áp dụng Sắp xếp, Phân trang và PROJECTION (Phần quan trọng nhất)
-            // Bỏ .Include() và dùng .Select()
+            // 4. Áp dụng Sắp xếp, Phân trang và INCLUDE
             var orders = await query
+                .Include(o => o.Shop)       // <-- (THAY ĐỔI) Cần cho MapToCustomerDto
+                .Include(o => o.OrderItems) // <-- (THAY ĐỔI) Cần cho MapToCustomerDto
                 .OrderByDescending(o => o.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(o => new CustomerOrderResponseDto
-                {
-                    // Map các trường của Order
-                    Id = o.Id,
-                    ShopId = o.ShopId,
-                    ShopName = o.Shop.Name, // EF Core sẽ tự động join bảng Shop khi cần
-                    Status = o.Status,
-                    TotalAmount = o.TotalAmount,
-                    PaymentMethod = o.PaymentMethod,
-                    CreatedAt = o.CreatedAt,
-
-                    // TỐI ƯU 1: Đếm tổng số item con ngay tại DB
-                    TotalItemsCount = o.OrderItems.Count(),
-
-                    // TỐI ƯU 2: Chỉ lấy 2 item đầu tiên từ DB
-                    Items = o.OrderItems
-                        .OrderBy(i => i.Id) // Sắp xếp để lấy 2 item đầu tiên
-                        .Take(2) // Chỉ lấy 2
-                        .Select(i => new CustomerOrderItemDto
-                        {
-                            ProductName = i.ProductName,
-                            VariantName = i.VariantName,
-                            Sku = i.Sku,
-                            Quantity = i.Quantity,
-                            Price = i.PriceAtTimeOfPurchase,
-                            ImageUrl = i.ImageUrl
-                        }).ToList()
-                })
                 .ToListAsync();
 
             // 5. Trả về

@@ -23,21 +23,24 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         }
 
         /// <summary>
-        /// Hàm GetMyOrdersAsync giờ trở nên rất gọn gàng
+        /// SỬA ĐỔI: Service giờ sẽ chịu trách nhiệm Mapping
         /// </summary>
         public async Task<PagedListResponseDto<CustomerOrderResponseDto>> GetMyOrdersAsync(int userId, CustomerOrderFilterDto filter)
         {
-            // 1. Gọi Repository (đã trả về DTO tối ưu)
-            var (dtos, totalCount) = await _orderRepo.GetOrdersByUserIdAsync(
+            // 1. Gọi Repository (trả về List<Order> thô)
+            var (orders, totalCount) = await _orderRepo.GetOrdersByUserIdAsync(
                 userId,
                 filter.Status,
                 filter.PageNumber,
                 filter.PageSize
             );
-            var orders = dtos.ToList();
-            // 2. Map sang DTO chung của PagedList (không cần map từng item nữa)
+
+            // 2. (THAY ĐỔI) Service tự map sang DTO
+            var dtos = orders.Select(MapToCustomerDto).ToList();
+
+            // 3. Map sang DTO chung của PagedList
             return new PagedListResponseDto<CustomerOrderResponseDto>(
-                orders,
+                dtos, // List<CustomerOrderResponseDto>
                 totalCount,
                 filter.PageNumber,
                 filter.PageSize
