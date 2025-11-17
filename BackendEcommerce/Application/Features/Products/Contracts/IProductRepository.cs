@@ -16,6 +16,19 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         Task<Product?> GetProductForUpdateAsync(int productId);
         void Delete(Product product);
         Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query);
+        /// (MỚI) Lấy Entity Product (Service cần thông tin gốc)
+        /// </summary>
+        Task<Product?> GetProductEntityByIdAsync(int productId);
+
+        /// <summary>
+        /// (SỬA ĐỔI) Query tối ưu để lấy danh sách ProductCardDto
+        /// (Lọc theo Shop VÀ loại trừ sản phẩm hiện tại)
+        /// </summary>
+        Task<List<ProductCardDto>> GetRelatedProductsAsCardsAsync(
+            int shopId, // Không cần nullable nữa
+                        // int? categoryId, // ĐÃ XÓA
+            int currentProductId,
+            int limit);
     }
 
 }

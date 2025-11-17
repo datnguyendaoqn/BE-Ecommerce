@@ -26,6 +26,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         // === KẾT THÚC HÀM MỚI ===
         Task<ApiResponseDTO<PagedListResponseDto<ProductCardDto>>> GetProductListForCustomerAsync
             (ProductListQueryRequestDto query);
+        Task<ApiResponseDTO<RelatedProductsResponseDto>> GetRelatedProductsAsync(int productId);
     }
 }
 

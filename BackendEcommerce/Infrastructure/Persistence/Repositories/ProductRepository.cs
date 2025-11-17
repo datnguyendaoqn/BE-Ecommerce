@@ -176,5 +176,42 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 query.PageSize
             );
         }
+        //
+        //
+        public async Task<Product?> GetProductEntityByIdAsync(int productId)
+        {
+            // Hàm đơn giản để lấy Entity (không tracking)
+            return await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == productId);
+        }
+        public async Task<List<ProductCardDto>> GetRelatedProductsAsCardsAsync(
+       int shopId,
+       int currentProductId,
+       int limit)
+        {
+            var query = _context.Products.AsNoTracking();
+
+           
+                query = query.Where(p => p.ShopId == shopId);
+            // Loại trừ chính nó và Sắp xếp (luôn theo SelledCount)
+            query = query.Where(p => p.Id != currentProductId);
+
+            // Áp dụng Select (Projection)
+            // (TÁI SỬ DỤNG logic map sang ProductCardDto từ hàm GetPaginatedProductCardsAsync)
+            return await query
+                .Take(limit)
+                .Select(p => new ProductCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id).ImageUrl, // Giả sử tên cột là vậy
+                    MinPrice = p.MinPrice, // Giả sử tên cột là vậy
+                    AverageRating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    SelledCount = p.SelledCount
+                })
+                .ToListAsync();
+        }
     }
 }

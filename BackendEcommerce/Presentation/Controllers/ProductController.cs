@@ -272,5 +272,23 @@ namespace BackendEcommerce.Presentation.Controllers
             // Trả về 200 OK với Message
             return Ok(response);
         }
+        [HttpGet("{productId}/related")]
+        [Authorize(Roles = "seller,customer")]
+        public async Task<IActionResult> GetRelatedProducts(int productId)
+        {
+            // Giao hết việc cho Service
+            var response = await _productService.GetRelatedProductsAsync(productId);
+
+            if (!response.IsSuccess)
+            {
+                if (response.Code == 404)
+                    return NotFound(response); // Trả về 404 nếu không tìm thấy
+
+                return StatusCode(500, response); // Trả về 500
+            }
+
+            // Trả về 200 OK với data là 2 danh sách
+            return Ok(response);
+        }
     }
 }
