@@ -51,7 +51,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         {
             // 1. Lấy đơn hàng (CÓ tracking, vì có thể KHÔNG cần, nhưng GetByIdWithItemsAsync đang có)
             // Tái sử dụng hàm Repo đã có
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -73,7 +73,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         public async Task<CustomerOrderResponseDto> CancelMyPendingOrderAsync(int userId, int orderId, CustomerCancelOrderRequestDto dto)
         {
             // 1. Lấy đơn hàng (CÓ tracking, vì sẽ Update)
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -113,7 +113,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         public async Task<CustomerOrderResponseDto> ConfirmMyDeliveryAsync(int userId, int orderId)
         {
             // 1. Lấy đơn hàng (CÓ tracking)
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -158,6 +158,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
                 TotalItemsCount = order.OrderItems.Count, // TỐI ƯU ĐẾM TẠI Ở ĐÂY
                 Items = order.OrderItems.Select(i => new CustomerOrderItemDto
                 {
+                    Id= i.Id,
                     ProductName = i.ProductName,
                     VariantName = i.VariantName,
                     Sku = i.Sku,
@@ -195,6 +196,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
                 // Map Items (dùng DTO con chung)
                 Items = order.OrderItems.Select(i => new CustomerOrderItemDto
                 {
+                    Id= i.Id,
                     ProductName = i.ProductName,
                     VariantName = i.VariantName,
                     Sku = i.Sku,

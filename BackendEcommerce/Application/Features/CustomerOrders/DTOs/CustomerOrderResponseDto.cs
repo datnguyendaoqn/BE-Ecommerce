@@ -22,6 +22,7 @@
     /// </summary>
     public class CustomerOrderItemDto
     {
+        public int Id { get; set; } // OrderItem Id 
         public string ProductName { get; set; } = string.Empty;
         public string VariantName { get; set; } = string.Empty; // "Size L, Màu Đen"
         public string Sku { get; set; } = string.Empty;

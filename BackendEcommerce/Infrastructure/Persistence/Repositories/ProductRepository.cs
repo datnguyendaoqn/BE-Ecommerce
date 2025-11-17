@@ -213,5 +213,32 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 })
                 .ToListAsync();
         }
+        //
+        // === (TRIỂN KHAI HÀM MỚI 1/2) ===
+        public async Task<int?> GetProductIdFromVariantIdAsync(int? variantId)
+        {
+            // Tối ưu: Chỉ Select cột ProductId
+            return await _context.ProductVariants
+                .Where(v => v.Id == variantId)
+                .Select(v => (int?)v.ProductId) // Ép kiểu nullable
+                .FirstOrDefaultAsync();
+        }
+
+        // === (TRIỂN KHAI HÀM MỚI 2/2) ===
+        public async Task UpdateProductRatingStatsAsync(int productId, int newReviewCount, decimal newAverageRating)
+        {
+            var product = await _context.Products.FindAsync(productId);
+
+            if (product != null)
+            {
+                product.ReviewCount = newReviewCount;
+                product.AverageRating = (double)newAverageRating;
+
+                // Đánh dấu nó đã bị thay đổi
+                _context.Products.Update(product);
+                // Lưu thay đổi (Service sẽ gọi SaveChangesAsync)
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

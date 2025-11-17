@@ -66,7 +66,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
         /// <summary>
         /// (MỚI) Triển khai GetOrderByIdWithItemsAsync
         /// </summary>
-        public async Task<Order?> GetOrderByIdWithItemsAsync(int orderId)
+        public async Task<Order?> GetOrderDetailByIdWithItemsAsync(int orderId)
         {
             // Lấy 1 đơn, Include Items
             // KHÔNG dùng AsNoTracking() vì chúng ta sẽ CẬP NHẬT nó
@@ -149,6 +149,15 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 
             // 5. Trả về
             return (orders, totalCount);
+        }
+        //
+        // === (TRIỂN KHAI HÀM MỚI) ===
+        public async Task<OrderItem?> GetOrderItemForReviewAsync(int orderItemId)
+        {
+            return await _context.OrderItems
+                .Include(oi => oi.Order)     // Gộp 'Order' (để check UserId và Status)
+                .Include(oi => oi.Variant)   // Gộp 'Variant' (để map DTO trả về)
+                .FirstOrDefaultAsync(oi => oi.Id == orderItemId);
         }
     }
 }

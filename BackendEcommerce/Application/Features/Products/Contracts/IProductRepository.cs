@@ -16,6 +16,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         Task<Product?> GetProductForUpdateAsync(int productId);
         void Delete(Product product);
         Task<PagedListResponseDto<ProductCardDto>> GetPaginatedProductCardsAsync(ProductListQueryRequestDto query);
+        /// <summary>
         /// (MỚI) Lấy Entity Product (Service cần thông tin gốc)
         /// </summary>
         Task<Product?> GetProductEntityByIdAsync(int productId);
@@ -29,6 +30,15 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
                         // int? categoryId, // ĐÃ XÓA
             int currentProductId,
             int limit);
+        /// <summary>
+        /// Lấy ProductId (cha) từ VariantId (con)
+        /// </summary>
+        Task<int?> GetProductIdFromVariantIdAsync(int? variantId);
+
+        /// <summary>
+        /// Cập nhật 2 cột thống kê (AverageRating, ReviewCount) của Product
+        /// </summary>
+        Task UpdateProductRatingStatsAsync(int productId, int newReviewCount, decimal newAverageRating);
     }
 
 }

@@ -30,5 +30,22 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 .OrderByDescending(r => r.CreatedAt) // Mới nhất lên đầu
                 .ToListAsync();
         }
+        public async Task<bool> HasAlreadyReviewedAsync(int orderItemId)
+        {
+            return await _context.Reviews
+                .AnyAsync(r => r.OrderItemId == orderItemId);
+        }
+
+        // === (TRIỂN KHAI HÀM MỚI 2/3) ===
+        public async Task AddAsync(Review review)
+        {
+            await _context.Reviews.AddAsync(review);
+        }
+
+        // === (TRIỂN KHAI HÀM MỚI 3/3) ===
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
     }
 }
