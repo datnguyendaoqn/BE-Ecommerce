@@ -53,7 +53,7 @@ namespace BackendEcommerce.Presentation.Controllers
         //
         [HttpGet("my-shop")]
         [Authorize(Roles = "seller")]
-        public async Task<ActionResult<ApiResponseDTO<List<ProductSummaryResponseDto>>>> GetMyProducts()
+        public async Task<ActionResult<ApiResponseDTO<List<ProductSummaryResponseDto>>>> GetProductsOfSeller()
         {
             // 1. Lấy SellerId từ Token (đã xác thực)
             var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -76,7 +76,7 @@ namespace BackendEcommerce.Presentation.Controllers
         }
         [HttpGet("seller/{productId}")] // Ví dụ: GET /api/products/123
         [Authorize(Roles = "seller")]
-        public async Task<ActionResult<ApiResponseDTO<ProductDetailResponseDto>>> GetProductOfSellerDetail(int productId)
+        public async Task<ActionResult<ApiResponseDTO<ProductDetailResponseDto>>> GetProductDetailForSeller(int productId)
         {
             // 1. Lấy SellerId từ Token
             var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -101,6 +101,8 @@ namespace BackendEcommerce.Presentation.Controllers
 
             return Ok(response);
         }
+        //
+        //
         [HttpGet("{productId}")] // Ví dụ: GET /api/products/123
         public async Task<ActionResult<ApiResponseDTO<ProductDetailResponseDto>>> GetProductDetail(int productId)
         {
@@ -121,6 +123,8 @@ namespace BackendEcommerce.Presentation.Controllers
 
             return Ok(response);
         }
+        //
+        //
         [HttpPut("{productId}")]
         [Authorize(Roles = "seller")]
         public async Task<ActionResult<ApiResponseDTO<UpdateProductResponseDto>>> UpdateProduct(int productId, [FromBody] UpdateProductRequestDto dto)
@@ -162,9 +166,7 @@ namespace BackendEcommerce.Presentation.Controllers
         [HttpPost("{productId}/variants")]
         [Authorize(Roles = "seller")]
         [Consumes("multipart/form-data")] // QUAN TRỌNG: Vì có IFormFile
-        public async Task<ActionResult<ApiResponseDTO<ProductVariantDetailDto>>> AddVariant(
-            int productId,
-            [FromForm] AddVariantRequestDto dto)
+        public async Task<ActionResult<ApiResponseDTO<ProductVariantDetailDto>>> AddVariant(int productId,[FromForm] AddVariantRequestDto dto)
         {
             // 1. Lấy SellerId từ Token
             var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -211,9 +213,7 @@ namespace BackendEcommerce.Presentation.Controllers
         // === CHỨC NĂNG 4C: XÓA VARIANT ===
         [HttpDelete("{productId}/variants/{variantId}")]
         [Authorize(Roles = "seller")]
-        public async Task<ActionResult<ApiResponseDTO<string>>> DeleteVariant(
-            int productId,
-            int variantId)
+        public async Task<ActionResult<ApiResponseDTO<string>>> DeleteVariant(int productId,int variantId)
         {
             // 1. Lấy SellerId từ Token
             var sellerIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -240,7 +240,6 @@ namespace BackendEcommerce.Presentation.Controllers
             // Trả về 200 OK với Message
             return Ok(response);
         }
-        // (Sau này chúng ta sẽ thêm [HttpGet("{id}")]
         // để gọi hàm GetProductDetailForBuyerAsync tại đây)
 
         // === CHỨC NĂNG MỚI: XÓA PRODUCT ===
@@ -272,6 +271,8 @@ namespace BackendEcommerce.Presentation.Controllers
             // Trả về 200 OK với Message
             return Ok(response);
         }
+        //
+        //
         [HttpGet("{productId}/related")]
         [Authorize(Roles = "seller,customer")]
         public async Task<IActionResult> GetRelatedProducts(int productId)
@@ -288,6 +289,23 @@ namespace BackendEcommerce.Presentation.Controllers
             }
 
             // Trả về 200 OK với data là 2 danh sách
+            return Ok(response);
+        }
+
+        //
+        //
+        [HttpGet("featured-bestsellers")] // Đặt tên rõ ràng
+        public async Task<IActionResult> GetFeaturedBestSellers()
+        {
+            // Giao hết việc cho Service
+            var response = await _productService.GetFeaturedBestSellersAsync();
+
+            if (!response.IsSuccess)
+            {
+                return StatusCode(500, response); // Trả về 500
+            }
+
+            // Trả về 200 OK với data là List<ProductCardDto>
             return Ok(response);
         }
     }

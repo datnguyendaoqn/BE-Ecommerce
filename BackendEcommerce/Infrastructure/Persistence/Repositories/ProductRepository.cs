@@ -206,8 +206,8 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id).ImageUrl, // Giả sử tên cột là vậy
-                    MinPrice = p.MinPrice, // Giả sử tên cột là vậy
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id).ImageUrl, 
+                    MinPrice = p.MinPrice, 
                     AverageRating = p.AverageRating,
                     ReviewCount = p.ReviewCount,
                     SelledCount = p.SelledCount
@@ -275,6 +275,28 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 
             // 3. KHÔNG GỌI SaveChangesAsync()
             // Service (Unit of Work) sẽ gọi 1 lần duy nhất
+        }
+        //
+        public async Task<List<ProductCardDto>> GetBestSellingProductsAsCardsAsync(int limit)
+        {
+            return await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == "active") // Chỉ lấy sản phẩm đang Bán
+                .OrderByDescending(p => p.SelledCount) // <-- LOGIC CHÍNH
+                .Take(limit) // Lấy Top 5 (hoặc N)
+                .Select(p => new ProductCardDto
+                {
+                    // Tái sử dụng logic Map của ProductCardDto
+                    // (Tôi giả định logic map giống như hàm GetPaginatedProductCardsAsync)
+                    Id = p.Id,
+                    Name = p.Name,
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(i=>i.EntityId==p.Id).ImageUrl ?? "ko co anh", // Cần logic lấy ảnh
+                    MinPrice = p.MinPrice,
+                    AverageRating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    SelledCount = p.SelledCount
+                })
+                .ToListAsync();
         }
     }
 }

@@ -1001,6 +1001,38 @@ namespace BackendEcommerce.Application.Features.Products
         }
         //
         //
+        /// <summary>
+        /// (MỚI) Lấy Top 5 sản phẩm Bán Chạy Nhất
+        /// </summary>
+        public async Task<ApiResponseDTO<List<ProductCardDto>>> GetFeaturedBestSellersAsync()
+        {
+            try
+            {
+                // 1. Gọi Repository (đã tối ưu và map sẵn DTO)
+                var products = await _productRepo.GetBestSellingProductsAsCardsAsync(5);
+
+                // 2. Đóng gói DTO trả về
+                return new ApiResponseDTO<List<ProductCardDto>>
+                {
+                    IsSuccess = true,
+                    Code = 200,
+                    Message = "Lấy Top 5 sản phẩm bán chạy thành công.",
+                    Data = products
+                };
+            }
+            catch (Exception ex)
+            {
+                // (Log lỗi)
+                return new ApiResponseDTO<List<ProductCardDto>>
+                {
+                    IsSuccess = false,
+                    Code = 500,
+                    Message = "Lỗi hệ thống khi lấy sản phẩm nổi bật."
+                };
+            }
+        }
+        //
+        //
         public async Task<ApiResponseDTO<PagedListResponseDto<ProductCardDto>>> GetProductListForCustomerAsync(ProductListQueryRequestDto query)
         {
           

@@ -40,6 +40,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         /// </summary>
         Task UpdateProductRatingStatsAsync(int productId, int newReviewCount, decimal newAverageRating);
         Task IncreaseSelledCountAsync(int variantId, int quantity);
+        Task<List<ProductCardDto>> GetBestSellingProductsAsCardsAsync(int limit);
     }
 
 }
