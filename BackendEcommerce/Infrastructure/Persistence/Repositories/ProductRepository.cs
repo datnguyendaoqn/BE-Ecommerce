@@ -4,6 +4,7 @@ using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 {
@@ -175,6 +176,127 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 query.PageNumber,
                 query.PageSize
             );
+        }
+        //
+        //
+        public async Task<Product?> GetProductEntityByIdAsync(int productId)
+        {
+            // Hàm đơn giản để lấy Entity (không tracking)
+            return await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == productId);
+        }
+        public async Task<List<ProductCardDto>> GetRelatedProductsAsCardsAsync(
+       int shopId,
+       int currentProductId,
+       int limit)
+        {
+            var query = _context.Products.AsNoTracking();
+
+           
+                query = query.Where(p => p.ShopId == shopId);
+            // Loại trừ chính nó và Sắp xếp (luôn theo SelledCount)
+            query = query.Where(p => p.Id != currentProductId);
+
+            // Áp dụng Select (Projection)
+            // (TÁI SỬ DỤNG logic map sang ProductCardDto từ hàm GetPaginatedProductCardsAsync)
+            return await query
+                .Take(limit)
+                .Select(p => new ProductCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id).ImageUrl, 
+                    MinPrice = p.MinPrice, 
+                    AverageRating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    SelledCount = p.SelledCount
+                })
+                .ToListAsync();
+        }
+        //
+        // === (TRIỂN KHAI HÀM MỚI 1/2) ===
+        public async Task<int?> GetProductIdFromVariantIdAsync(int? variantId)
+        {
+            // Tối ưu: Chỉ Select cột ProductId
+            return await _context.ProductVariants
+                .Where(v => v.Id == variantId)
+                .Select(v => (int?)v.ProductId) // Ép kiểu nullable
+                .FirstOrDefaultAsync();
+        }
+
+        // === (TRIỂN KHAI HÀM MỚI 2/2) ===
+        public async Task UpdateProductRatingStatsAsync(int productId, int newReviewCount, decimal newAverageRating)
+        {
+            var product = await _context.Products.FindAsync(productId);
+
+            if (product != null)
+            {
+                product.ReviewCount = newReviewCount;
+                product.AverageRating = (double)newAverageRating;
+
+                // Đánh dấu nó đã bị thay đổi
+                _context.Products.Update(product);
+                // Lưu thay đổi (Service sẽ gọi SaveChangesAsync)
+                await _context.SaveChangesAsync();
+            }
+        }
+        //
+        // === (TRIỂN KHAI HÀM MỚI) ===
+        public async Task IncreaseSelledCountAsync(int variantId, int quantity)
+        {
+            // 1. Tìm Product (cha) thông qua VariantId (con)
+            // Chúng ta cần tracking (KHÔNG AsNoTracking) vì chúng ta sẽ UPDATE
+            var variant = await _context.ProductVariants
+                .Include(v => v.Product) // <-- Gộp Product (cha)
+                .FirstOrDefaultAsync(v => v.Id == variantId);
+
+            if (variant == null)
+            {
+                // Variant này có thể đã bị xóa, log lỗi
+                Debug.WriteLine($"[IncreaseSelledCount] Không tìm thấy VariantId: {variantId}");
+                return;
+            }
+
+            // (NẾU BẠN CÓ SelledCount TRONG VARIANT, HÃY CẬP NHẬT NÓ Ở ĐÂY)
+            // variant.SelledCount += quantity; 
+            // _context.ProductVariants.Update(variant);
+
+            // 2. Cập nhật Product (cha)
+            if (variant.Product != null)
+            {
+                variant.Product.SelledCount += quantity;
+                _context.Products.Update(variant.Product);
+            }
+            else
+            {
+                Debug.WriteLine($"[IncreaseSelledCount] Variant {variantId} không có Product cha.");
+            }
+
+            // 3. KHÔNG GỌI SaveChangesAsync()
+            // Service (Unit of Work) sẽ gọi 1 lần duy nhất
+        }
+        //
+        public async Task<List<ProductCardDto>> GetBestSellingProductsAsCardsAsync(int limit)
+        {
+            return await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == "active") // Chỉ lấy sản phẩm đang Bán
+                .OrderByDescending(p => p.SelledCount) // <-- LOGIC CHÍNH
+                .Take(limit) // Lấy Top 5 (hoặc N)
+                .Select(p => new ProductCardDto
+                {
+                    // Tái sử dụng logic Map của ProductCardDto
+                    // (Tôi giả định logic map giống như hàm GetPaginatedProductCardsAsync)
+                    Id = p.Id,
+                    Name = p.Name,
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(i=>i.EntityId==p.Id).ImageUrl ?? "ko co anh", // Cần logic lấy ảnh
+                    MinPrice = p.MinPrice,
+                    AverageRating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    SelledCount = p.SelledCount
+                })
+                .ToListAsync();
         }
     }
 }

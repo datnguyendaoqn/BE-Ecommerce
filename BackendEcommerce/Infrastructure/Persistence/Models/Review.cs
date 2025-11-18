@@ -7,7 +7,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
     {
         public int Id { get; set; }
         public int UserId { get; set; }
-        public int VariantId { get; set; }
+        public int? VariantId { get; set; }
         public decimal Rating { get; set; }
         public string? CommentText { get; set; }
         public int OrderItemId { get; set; }

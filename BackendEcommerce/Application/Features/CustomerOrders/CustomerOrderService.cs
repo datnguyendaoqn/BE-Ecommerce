@@ -1,6 +1,7 @@
 ﻿using BackendEcommerce.Application.Features.CustomerOrders.Contracts;
 using BackendEcommerce.Application.Features.CustomerOrders.DTOs;
 using BackendEcommerce.Application.Features.Orders.Contracts;
+using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using System.ComponentModel.DataAnnotations;
@@ -14,30 +15,35 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
     public class CustomerOrderService : ICustomerOrderService
     {
         private readonly IOrderRepository _orderRepo;
+        private readonly IProductRepository _productRepo;
         // private readonly IMapper _mapper; // (Nếu dùng AutoMapper)
 
         // Chỉ cần OrderRepository
-        public CustomerOrderService(IOrderRepository orderRepo)
+        public CustomerOrderService(IOrderRepository orderRepo,IProductRepository productRepo)
         {
             _orderRepo = orderRepo;
+            _productRepo = productRepo;
         }
 
         /// <summary>
-        /// Hàm GetMyOrdersAsync giờ trở nên rất gọn gàng
+        /// SỬA ĐỔI: Service giờ sẽ chịu trách nhiệm Mapping
         /// </summary>
         public async Task<PagedListResponseDto<CustomerOrderResponseDto>> GetMyOrdersAsync(int userId, CustomerOrderFilterDto filter)
         {
-            // 1. Gọi Repository (đã trả về DTO tối ưu)
-            var (dtos, totalCount) = await _orderRepo.GetOrdersByUserIdAsync(
+            // 1. Gọi Repository (trả về List<Order> thô)
+            var (orders, totalCount) = await _orderRepo.GetOrdersByUserIdAsync(
                 userId,
                 filter.Status,
                 filter.PageNumber,
                 filter.PageSize
             );
-            var orders = dtos.ToList();
-            // 2. Map sang DTO chung của PagedList (không cần map từng item nữa)
+
+            // 2. (THAY ĐỔI) Service tự map sang DTO
+            var dtos = orders.Select(MapToCustomerDto).ToList();
+
+            // 3. Map sang DTO chung của PagedList
             return new PagedListResponseDto<CustomerOrderResponseDto>(
-                orders,
+                dtos, // List<CustomerOrderResponseDto>
                 totalCount,
                 filter.PageNumber,
                 filter.PageSize
@@ -51,7 +57,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         {
             // 1. Lấy đơn hàng (CÓ tracking, vì có thể KHÔNG cần, nhưng GetByIdWithItemsAsync đang có)
             // Tái sử dụng hàm Repo đã có
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -73,7 +79,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         public async Task<CustomerOrderResponseDto> CancelMyPendingOrderAsync(int userId, int orderId, CustomerCancelOrderRequestDto dto)
         {
             // 1. Lấy đơn hàng (CÓ tracking, vì sẽ Update)
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -113,7 +119,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
         public async Task<CustomerOrderResponseDto> ConfirmMyDeliveryAsync(int userId, int orderId)
         {
             // 1. Lấy đơn hàng (CÓ tracking)
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
@@ -137,9 +143,21 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
             order.UpdatedAt = DateTime.UtcNow;
 
             _orderRepo.Update(order);
+            // 5. (LOGIC MỚI) Tăng SelledCount (trước khi Save)
+            foreach (var item in order.OrderItems)
+            {
+                if (item.ProductVariantId.HasValue)
+                {
+                    // Gọi hàm mới của ProductRepository
+                    await _productRepo.IncreaseSelledCountAsync(item.ProductVariantId.Value, item.Quantity);
+                }
+            }
+
+            // 6. Lưu (Unit of Work)
             await _orderRepo.SaveChangesAsync();
 
-            // 5. Map và trả về DTO
+            // 7. Map và trả về DTO
+            // (Hàm MapToCustomerDto của bạn không cần thay đổi)
             return MapToCustomerDto(order);
         }
 
@@ -158,6 +176,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
                 TotalItemsCount = order.OrderItems.Count, // TỐI ƯU ĐẾM TẠI Ở ĐÂY
                 Items = order.OrderItems.Select(i => new CustomerOrderItemDto
                 {
+                    Id= i.Id,
                     ProductName = i.ProductName,
                     VariantName = i.VariantName,
                     Sku = i.Sku,
@@ -195,6 +214,7 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
                 // Map Items (dùng DTO con chung)
                 Items = order.OrderItems.Select(i => new CustomerOrderItemDto
                 {
+                    Id= i.Id,
                     ProductName = i.ProductName,
                     VariantName = i.VariantName,
                     Sku = i.Sku,

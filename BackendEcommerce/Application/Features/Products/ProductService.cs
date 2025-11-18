@@ -955,6 +955,84 @@ namespace BackendEcommerce.Application.Features.Products
         }
         //
         //
+        /// <summary>
+        /// (SỬA ĐỔI) Lấy các sản phẩm liên quan (CHỈ CÙNG SHOP)
+        /// </summary>
+        public async Task<ApiResponseDTO<RelatedProductsResponseDto>> GetRelatedProductsAsync(int productId)
+        {
+            try
+            {
+                // 1. Lấy sản phẩm gốc để biết ShopId và CategoryId
+                var product = await _productRepo.GetProductEntityByIdAsync(productId); // Cần hàm này
+                if (product == null)
+                {
+                    return new ApiResponseDTO<RelatedProductsResponseDto> { IsSuccess = false, Code = 404, Message = "Không tìm thấy sản phẩm." };
+                }
+
+                // 2. Gọi Repository 1 LẦN (chỉ lấy cùng Shop)
+                var sameShopProducts = await _productRepo.GetRelatedProductsAsCardsAsync(
+                    product.ShopId,
+                    // null, // Đã bỏ categoryId
+                    productId,5
+                );
+
+                // Chờ cả 2 query chạy xong
+
+                // 3. Đóng gói DTO trả về
+                var responseDto = new RelatedProductsResponseDto
+                {
+                    SameShopProducts = sameShopProducts
+                    // ĐÃ XÓA: SameCategoryProducts = await sameCategoryTask
+                };
+
+                return new ApiResponseDTO<RelatedProductsResponseDto>
+                {
+                    IsSuccess = true,
+                    Code = 200,
+                    Message = "Lấy sản phẩm tương tự thành công.",
+                    Data = responseDto
+                };
+            }
+            catch (Exception ex)
+            {
+                // (Log lỗi)
+                return new ApiResponseDTO<RelatedProductsResponseDto> { IsSuccess = false, Code = 500, Message = ex.Message };
+            }
+        }
+        //
+        //
+        /// <summary>
+        /// (MỚI) Lấy Top 5 sản phẩm Bán Chạy Nhất
+        /// </summary>
+        public async Task<ApiResponseDTO<List<ProductCardDto>>> GetFeaturedBestSellersAsync()
+        {
+            try
+            {
+                // 1. Gọi Repository (đã tối ưu và map sẵn DTO)
+                var products = await _productRepo.GetBestSellingProductsAsCardsAsync(5);
+
+                // 2. Đóng gói DTO trả về
+                return new ApiResponseDTO<List<ProductCardDto>>
+                {
+                    IsSuccess = true,
+                    Code = 200,
+                    Message = "Lấy Top 5 sản phẩm bán chạy thành công.",
+                    Data = products
+                };
+            }
+            catch (Exception ex)
+            {
+                // (Log lỗi)
+                return new ApiResponseDTO<List<ProductCardDto>>
+                {
+                    IsSuccess = false,
+                    Code = 500,
+                    Message = "Lỗi hệ thống khi lấy sản phẩm nổi bật."
+                };
+            }
+        }
+        //
+        //
         public async Task<ApiResponseDTO<PagedListResponseDto<ProductCardDto>>> GetProductListForCustomerAsync(ProductListQueryRequestDto query)
         {
           

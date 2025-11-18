@@ -64,7 +64,7 @@ namespace BackendEcommerce.Application.Features.SellerOrders
             }
 
             // 2. Lấy đơn hàng (Sử dụng hàm mới, CÓ tracking)
-            var order = await _orderRepo.GetOrderByIdWithItemsAsync(orderId);
+            var order = await _orderRepo.GetOrderDetailByIdWithItemsAsync(orderId);
             if (order == null)
             {
                 throw new KeyNotFoundException("Không tìm thấy đơn hàng.");

@@ -27,7 +27,7 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
         /// (HÀM MỚI) Lấy một đơn hàng duy nhất bằng ID,
         /// và bao gồm cả các OrderItems liên quan.
         /// </summary>
-        Task<Order?> GetOrderByIdWithItemsAsync(int orderId);
+        Task<Order?> GetOrderDetailByIdWithItemsAsync(int orderId);
 
         /// <summary>
         /// (HÀM MỚI) Đánh dấu một đơn hàng là đã bị sửa đổi (Modified).
@@ -38,11 +38,18 @@ namespace BackendEcommerce.Application.Features.Orders.Contracts
         /// Sửa đổi: Hàm này giờ trả về DTO đã được tối ưu (Projection)
         /// thay vì trả về Entity (Order).
         /// </summary>
-        Task<(IEnumerable<CustomerOrderResponseDto> Orders, int TotalCount)> GetOrdersByUserIdAsync(
+        Task<(IEnumerable<Order> Orders, int TotalCount)> GetOrdersByUserIdAsync(
             int userId,
             string? status,
             int pageNumber,
             int pageSize);
+        // === (HÀM MỚI CHO REVIEW SERVICE) ===
+        /// <summary>
+        /// Lấy 1 OrderItem để kiểm tra nghiệp vụ Review.
+        /// (Bao gồm cả Order (cha) và Variant (anh em) để check)
+        /// </summary>
+        Task<OrderItem?> GetOrderItemForReviewAsync(int orderItemId);
+
 
     }
 }

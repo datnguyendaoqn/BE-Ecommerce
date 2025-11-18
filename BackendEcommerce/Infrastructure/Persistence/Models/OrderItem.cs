@@ -7,7 +7,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Models
     public class OrderItem
     {
         public int Id { get; set; }
-        public int? OrderId { get; set; }
+        public int OrderId { get; set; }
         public int Quantity { get; set; }
         // 1. (Đổi tên) Rõ ràng hơn: Đây là giá tại thời điểm mua
         public decimal PriceAtTimeOfPurchase { get; set; } // (Thay cho UnitPrice)
