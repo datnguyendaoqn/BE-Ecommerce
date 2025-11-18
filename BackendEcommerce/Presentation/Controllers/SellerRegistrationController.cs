@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace BackendEcommerce.Application.Features.SellerRegistration
 {
     [ApiController]
-    [Route("api/sellers")]
+    [Route("api/seller")]
     public class SellerRegistrationController : ControllerBase
     {
         private readonly ISellerRegistrationService _registrationService;

@@ -4,6 +4,7 @@ using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Data;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace BackendEcommerce.Infrastructure.Persistence.Repositories
 {
@@ -239,6 +240,41 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 // Lưu thay đổi (Service sẽ gọi SaveChangesAsync)
                 await _context.SaveChangesAsync();
             }
+        }
+        //
+        // === (TRIỂN KHAI HÀM MỚI) ===
+        public async Task IncreaseSelledCountAsync(int variantId, int quantity)
+        {
+            // 1. Tìm Product (cha) thông qua VariantId (con)
+            // Chúng ta cần tracking (KHÔNG AsNoTracking) vì chúng ta sẽ UPDATE
+            var variant = await _context.ProductVariants
+                .Include(v => v.Product) // <-- Gộp Product (cha)
+                .FirstOrDefaultAsync(v => v.Id == variantId);
+
+            if (variant == null)
+            {
+                // Variant này có thể đã bị xóa, log lỗi
+                Debug.WriteLine($"[IncreaseSelledCount] Không tìm thấy VariantId: {variantId}");
+                return;
+            }
+
+            // (NẾU BẠN CÓ SelledCount TRONG VARIANT, HÃY CẬP NHẬT NÓ Ở ĐÂY)
+            // variant.SelledCount += quantity; 
+            // _context.ProductVariants.Update(variant);
+
+            // 2. Cập nhật Product (cha)
+            if (variant.Product != null)
+            {
+                variant.Product.SelledCount += quantity;
+                _context.Products.Update(variant.Product);
+            }
+            else
+            {
+                Debug.WriteLine($"[IncreaseSelledCount] Variant {variantId} không có Product cha.");
+            }
+
+            // 3. KHÔNG GỌI SaveChangesAsync()
+            // Service (Unit of Work) sẽ gọi 1 lần duy nhất
         }
     }
 }

@@ -39,6 +39,7 @@ namespace BackendEcommerce.Application.Features.Products.Contracts
         /// Cập nhật 2 cột thống kê (AverageRating, ReviewCount) của Product
         /// </summary>
         Task UpdateProductRatingStatsAsync(int productId, int newReviewCount, decimal newAverageRating);
+        Task IncreaseSelledCountAsync(int variantId, int quantity);
     }
 
 }

@@ -1,6 +1,7 @@
 ﻿using BackendEcommerce.Application.Features.CustomerOrders.Contracts;
 using BackendEcommerce.Application.Features.CustomerOrders.DTOs;
 using BackendEcommerce.Application.Features.Orders.Contracts;
+using BackendEcommerce.Application.Features.Products.Contracts;
 using BackendEcommerce.Application.Shared.DTOs;
 using BackendEcommerce.Infrastructure.Persistence.Models;
 using System.ComponentModel.DataAnnotations;
@@ -14,12 +15,14 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
     public class CustomerOrderService : ICustomerOrderService
     {
         private readonly IOrderRepository _orderRepo;
+        private readonly IProductRepository _productRepo;
         // private readonly IMapper _mapper; // (Nếu dùng AutoMapper)
 
         // Chỉ cần OrderRepository
-        public CustomerOrderService(IOrderRepository orderRepo)
+        public CustomerOrderService(IOrderRepository orderRepo,IProductRepository productRepo)
         {
             _orderRepo = orderRepo;
+            _productRepo = productRepo;
         }
 
         /// <summary>
@@ -140,9 +143,21 @@ namespace BackendEcommerce.Application.Features.CustomerOrders
             order.UpdatedAt = DateTime.UtcNow;
 
             _orderRepo.Update(order);
+            // 5. (LOGIC MỚI) Tăng SelledCount (trước khi Save)
+            foreach (var item in order.OrderItems)
+            {
+                if (item.ProductVariantId.HasValue)
+                {
+                    // Gọi hàm mới của ProductRepository
+                    await _productRepo.IncreaseSelledCountAsync(item.ProductVariantId.Value, item.Quantity);
+                }
+            }
+
+            // 6. Lưu (Unit of Work)
             await _orderRepo.SaveChangesAsync();
 
-            // 5. Map và trả về DTO
+            // 7. Map và trả về DTO
+            // (Hàm MapToCustomerDto của bạn không cần thay đổi)
             return MapToCustomerDto(order);
         }
 
