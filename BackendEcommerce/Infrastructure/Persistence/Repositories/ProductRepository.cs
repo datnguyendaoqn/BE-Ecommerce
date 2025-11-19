@@ -290,7 +290,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                     // (Tôi giả định logic map giống như hàm GetPaginatedProductCardsAsync)
                     Id = p.Id,
                     Name = p.Name,
-                    PrimaryImageUrl = _context.Media.FirstOrDefault(i=>i.EntityId==p.Id).ImageUrl ?? "ko co anh", // Cần logic lấy ảnh
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id&&m.EntityType=="product").ImageUrl ?? "ko co anh", // Cần logic lấy ảnh
                     MinPrice = p.MinPrice,
                     AverageRating = p.AverageRating,
                     ReviewCount = p.ReviewCount,
