@@ -41,7 +41,6 @@ namespace BackendEcommerce.Presentation.Controllers
                 return StatusCode(500, new { message = "An internal server error occurred.", details = ex.Message });
             }
         }
-
         [HttpGet("summary")]
         public async Task<IActionResult> GetDashboardSummary(
             [FromQuery] DateTime? from,
@@ -104,4 +103,4 @@ namespace BackendEcommerce.Presentation.Controllers
             );
         }
     }
-}    
+}

@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace BackendEcommerce.Application.Features.Dashboard
 {
-  public class DashboardService : IDashboardService // Triển khai interface từ namespace mới
+    public class DashboardService : IDashboardService // Triển khai interface từ namespace mới
     {
         private readonly EcomDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor; // Thêm
@@ -61,7 +61,7 @@ namespace BackendEcommerce.Application.Features.Dashboard
                 // Có role "seller" nhưng không tìm thấy shop (ví dụ: shop chưa được duyệt)
                 throw new UnauthorizedAccessException("User is a seller but no associated shop was found.");
             }
-            
+
             return shopId;
         }
 
@@ -74,120 +74,125 @@ namespace BackendEcommerce.Application.Features.Dashboard
             // GIẢ ĐỊNH: Đơn hàng hợp lệ là đơn KHÔNG 'pending' VÀ KHÔNG có lý do hủy
             return _context.OrderItems
                 .AsNoTracking() // Quan trọng: Tăng hiệu suất cho truy vấn chỉ đọc
-                .Where(oi => oi.Order.Status != "pending" 
-                             && oi.Order.CancellationReason == null
+                .Where(oi => oi.Order.Status != "Completed"
                              && oi.Variant.Product.ShopId == shopId); // <-- LỌC THEO SHOP ID
         }
 
         public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(DateTime from, DateTime to)
-{
-    long shopId = await GetCurrentSellerShopIdAsync(); // Xác thực và lấy Shop ID
-
-    var itemsInDateRange = GetValidOrderItems(shopId)
-        .Where(oi => oi.Order.CreatedAt >= from && oi.Order.CreatedAt <= to);
-
-    // --- BẮT ĐẦU SỬA LỖI ---
-    // Chúng ta phải chạy các truy vấn này một cách TUẦN TỰ (sequential)
-    // để tránh lỗi "DbContext" không thread-safe.
-
-    // 1. Tính toán doanh thu và đơn vị bán được (có thể gộp)
-    var shopStats = await itemsInDateRange
-        .GroupBy(oi => 1) // Nhóm tất cả thành 1 nhóm
-        .Select(g => new
         {
-            TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase),
-            TotalUnitsSold = g.Sum(oi => oi.Quantity)
-        })
-        .FirstOrDefaultAsync();
+            long shopId = await GetCurrentSellerShopIdAsync(); // Xác thực và lấy Shop ID
+            var startDate = from.Date;
+            var endDate = to.Date.AddDays(1).AddTicks(-1);
+            var itemsInDateRange = GetValidOrderItems(shopId)
+                .Where(oi => oi.Order.CreatedAt >= startDate && oi.Order.CreatedAt <= endDate);
 
-    // 2. Đếm số đơn hàng riêng biệt
-    var ordersCount = await itemsInDateRange
-        .Select(oi => oi.OrderId)
-        .Distinct()
-        .CountAsync();
+            // --- BẮT ĐẦU SỬA LỖI ---
+            // Chúng ta phải chạy các truy vấn này một cách TUẦN TỰ (sequential)
+            // để tránh lỗi "DbContext" không thread-safe.
 
-    // 3. Đếm khách hàng mới (của toàn platform)
-    // Phải dùng _context trực tiếp vì GetValidOrderItems đã lọc theo shop
-    var newCustomers = await _context.Users
-        .AsNoTracking()
-        .CountAsync(u => u.Role == "customer" && u.CreatedAt >= from && u.CreatedAt <= to);
-        
-    // --- KẾT THÚC SỬA LỖI ---
+            // 1. Tính toán doanh thu và đơn vị bán được (có thể gộp)
+            var shopStats = await itemsInDateRange
+                .GroupBy(oi => 1) // Nhóm tất cả thành 1 nhóm
+                .Select(g => new
+                {
+                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase),
+                    TotalUnitsSold = g.Sum(oi => oi.Quantity)
+                })
+                .FirstOrDefaultAsync();
 
-    return new DashboardSummaryResponse
-    {
-        // Dùng FirstOrDefaultAsync ở trên có thể trả về null nếu không có đơn hàng nào
-        TotalRevenue = shopStats?.TotalRevenue ?? 0,
-        TotalUnitsSold = shopStats?.TotalUnitsSold ?? 0,
-        TotalValidOrders = ordersCount,
-        NewCustomers = newCustomers
-    };
-}
+            // 2. Đếm số đơn hàng riêng biệt
+            var ordersCount = await itemsInDateRange
+                .Select(oi => oi.OrderId)
+                .Distinct()
+                .CountAsync();
 
-    public async Task<IEnumerable<SalesOverTimeResponse>> GetSalesOverTimeAsync(DateTime from, DateTime to)
-{
-    long shopId = await GetCurrentSellerShopIdAsync();
+            // 3. Đếm khách hàng mới (của toàn platform)
+            // Phải dùng _context trực tiếp vì GetValidOrderItems đã lọc theo shop
+            var newCustomers = await _context.Users
+                .AsNoTracking()
+                .CountAsync(u => u.Role == "customer" && u.CreatedAt >= from && u.CreatedAt <= to);
 
-    // 1. Truy vấn và nhóm (GroupBy) bằng cách sử dụng g.Key là DateTime (EF Core dịch được)
-    var salesByDay_Anonymous = await GetValidOrderItems(shopId)
-        .Where(oi => oi.Order.CreatedAt >= from && oi.Order.CreatedAt <= to)
-        .GroupBy(oi => oi.Order.CreatedAt.Date) // EF Core có thể dịch .Date
-        .Select(g => new
+            // --- KẾT THÚC SỬA LỖI ---
+
+            return new DashboardSummaryResponse
+            {
+                // Dùng FirstOrDefaultAsync ở trên có thể trả về null nếu không có đơn hàng nào
+                TotalRevenue = shopStats?.TotalRevenue ?? 0,
+                TotalUnitsSold = shopStats?.TotalUnitsSold ?? 0,
+                TotalValidOrders = ordersCount,
+                NewCustomers = newCustomers,
+
+            };
+        }
+        public async Task<IEnumerable<SalesOverTimeResponse>> GetSalesOverTimeAsync(DateTime from, DateTime to)
         {
-            DateKey = g.Key, // g.Key ở đây vẫn là DateTime
-            Revenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase),
-            OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
-        })
-        .OrderBy(x => x.DateKey)
-        .ToListAsync(); // <-- 2. Lấy dữ liệu về bộ nhớ máy chủ (Client)
+            long shopId = await GetCurrentSellerShopIdAsync();
+            var startDate = from.Date;
+            var endDate = to.Date.AddDays(1).AddTicks(-1);
 
-    // 3. Khi dữ liệu đã ở trên máy chủ, ta mới dùng .Select() của LINQ-to-Objects
-    // để chuyển đổi DateTime (DateKey) sang DateOnly an toàn.
-    var salesByDay = salesByDay_Anonymous
-        .Select(g => new SalesOverTimeResponse
-        {
-            Date = g.DateKey.ToString("yyyy-MM-dd"), // <-- Hàm này giờ chạy trong C#, không phải SQL
-            Revenue = g.Revenue,
-            OrderCount = g.OrderCount
-        });
+            // 1. Truy vấn và nhóm (GroupBy) bằng cách sử dụng g.Key là DateTime (EF Core dịch được)
+            var salesByDay_Anonymous = await GetValidOrderItems(shopId)
+                .Where(oi => oi.Order.CreatedAt >= startDate && oi.Order.CreatedAt <= endDate)
+                .GroupBy(oi => oi.Order.CreatedAt.Date) // EF Core có thể dịch .Date
+                .Select(g => new
+                {
+                    DateKey = g.Key, // g.Key ở đây vẫn là DateTime
+                    Revenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase),
+                    OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
+                })
+                .OrderBy(x => x.DateKey)
+                .ToListAsync(); // <-- 2. Lấy dữ liệu về bộ nhớ máy chủ (Client)
 
-    return salesByDay;
-}
-       public async Task<IEnumerable<TopProductResponse>> GetTopSellingProductsAsync(DateTime from, DateTime to, int topN = 5)
-{
-    long shopId = await GetCurrentSellerShopIdAsync();
-    
-    
-    // GroupBy các trường cụ thể (Id và Name) mà chúng ta cần.
-    var topProducts = await GetValidOrderItems(shopId)
-        .Where(oi => oi.Order.CreatedAt >= from && oi.Order.CreatedAt <= to)
-        // Nhóm theo một đối tượng ẩn danh (anonymous object) chỉ chứa các kiểu đơn giản
-        .GroupBy(oi => new { 
-            oi.Variant.Product.Id, 
-            oi.Variant.Product.Name 
-        }) 
-        .Select(g => new TopProductResponse
+            // 3. Khi dữ liệu đã ở trên máy chủ, ta mới dùng .Select() của LINQ-to-Objects
+            // để chuyển đổi DateTime (DateKey) sang DateOnly an toàn.
+            var salesByDay = salesByDay_Anonymous
+                .Select(g => new SalesOverTimeResponse
+                {
+                    Date = g.DateKey.ToString("yyyy-MM-dd"), // <-- Hàm này giờ chạy trong C#, không phải SQL
+                    Revenue = g.Revenue,
+                    OrderCount = g.OrderCount
+                });
+
+            return salesByDay;
+        }
+        public async Task<IEnumerable<TopProductResponse>> GetTopSellingProductsAsync(DateTime from, DateTime to, int topN = 5)
         {
-            ProductId = g.Key.Id,       // Lấy từ Key của GroupBy
-            ProductName = g.Key.Name,   // Lấy từ Key của GroupBy
-            UnitsSold = g.Sum(oi => oi.Quantity),
-            TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
-        })
-        .OrderByDescending(dto => dto.TotalRevenue) // Order sau khi Select
-        .Take(topN)
-        .ToListAsync();
-    
-    return topProducts;
-}
+            long shopId = await GetCurrentSellerShopIdAsync();
+            var startDate = from.Date;
+            var endDate = to.Date.AddDays(1).AddTicks(-1);
+
+            // GroupBy các trường cụ thể (Id và Name) mà chúng ta cần.
+            var topProducts = await GetValidOrderItems(shopId)
+                .Where(oi => oi.Order.CreatedAt >= startDate && oi.Order.CreatedAt <= endDate)
+                // Nhóm theo một đối tượng ẩn danh (anonymous object) chỉ chứa các kiểu đơn giản
+                .GroupBy(oi => new
+                {
+                    oi.Variant.Product.Id,
+                    oi.Variant.Product.Name
+                })
+                .Select(g => new TopProductResponse
+                {
+                    ProductId = g.Key.Id,       // Lấy từ Key của GroupBy
+                    ProductName = g.Key.Name,   // Lấy từ Key của GroupBy
+                    UnitsSold = g.Sum(oi => oi.Quantity),
+                    TotalRevenue = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
+                })
+                .OrderByDescending(dto => dto.TotalRevenue) // Order sau khi Select
+                .Take(topN)
+                .ToListAsync();
+
+            return topProducts;
+        }
         public async Task<IEnumerable<CategorySalesResponse>> GetSalesByCategoryAsync(DateTime from, DateTime to)
         {
             long shopId = await GetCurrentSellerShopIdAsync();
-            
+            var startDate = from.Date;
+            var endDate = to.Date.AddDays(1).AddTicks(-1);
             var categorySales = await GetValidOrderItems(shopId) // Chỉ lấy items của shop
-                .Where(oi => oi.Order.CreatedAt >= from && oi.Order.CreatedAt <= to && oi.Variant.Product.Category != null)
-                .GroupBy(oi => new 
-                { 
-                    oi.Variant.Product.Category.Name 
+                .Where(oi => oi.Order.CreatedAt >= startDate && oi.Order.CreatedAt <= endDate && oi.Variant.Product.Category != null)
+                .GroupBy(oi => new
+                {
+                    oi.Variant.Product.Category.Name
                 })
                 .Select(g => new CategorySalesResponse
                 {
@@ -202,47 +207,48 @@ namespace BackendEcommerce.Application.Features.Dashboard
         }
 
         public async Task<IEnumerable<RecentOrderResponse>> GetRecentOrdersAsync(int count = 10)
-{
-    long shopId = await GetCurrentSellerShopIdAsync();
-
-    // SỬA LỖI ORA-12704:
-    // 1. GroupBy và Select các cột GỐC (raw) vào một kiểu
-    //    trung gian (anonymous type) TRƯỚC KHI gọi ToListAsync.
-    var intermediateData = await _context.OrderItems
-        .AsNoTracking()
-        .Where(oi => oi.Variant.Product.ShopId == shopId)
-        .GroupBy(oi => new {
-            oi.Order.Id,
-            oi.Order.User.FullName, // <-- Group by cột gốc (có thể null)
-            oi.Order.CreatedAt,
-            oi.Order.Status
-        })
-        .OrderByDescending(g => g.Key.CreatedAt)
-        .Take(count)
-        .Select(g => new 
         {
-            // Lấy dữ liệu thô từ g.Key
-            g.Key.Id,
-            g.Key.FullName, // <-- Lấy FullName (có thể null)
-            g.Key.CreatedAt,
-            g.Key.Status,
-            // Tính tổng (việc này an toàn trong SQL)
-            TotalAmount = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
-        })
-        .ToListAsync(); // <-- Dữ liệu được đưa vào bộ nhớ C# TẠI ĐÂY
+            long shopId = await GetCurrentSellerShopIdAsync();
+            
+            // SỬA LỖI ORA-12704:
+            // 1. GroupBy và Select các cột GỐC (raw) vào một kiểu
+            //    trung gian (anonymous type) TRƯỚC KHI gọi ToListAsync.
+            var intermediateData = await _context.OrderItems
+                .AsNoTracking()
+                .Where(oi => oi.Variant.Product.ShopId == shopId)
+                .GroupBy(oi => new
+                {
+                    oi.Order.Id,
+                    oi.Order.User.FullName, // <-- Group by cột gốc (có thể null)
+                    oi.Order.CreatedAt,
+                    oi.Order.Status
+                })
+                .OrderByDescending(g => g.Key.CreatedAt)
+                .Take(count)
+                .Select(g => new
+                {
+                    // Lấy dữ liệu thô từ g.Key
+                    g.Key.Id,
+                    g.Key.FullName, // <-- Lấy FullName (có thể null)
+                    g.Key.CreatedAt,
+                    g.Key.Status,
+                    // Tính tổng (việc này an toàn trong SQL)
+                    TotalAmount = g.Sum(oi => oi.Quantity * oi.PriceAtTimeOfPurchase)
+                })
+                .ToListAsync(); // <-- Dữ liệu được đưa vào bộ nhớ C# TẠI ĐÂY
 
-    // 2. Bây giờ, dữ liệu đã ở trong C#. Chúng ta dùng LINQ-to-Objects
-    //    để áp dụng logic "??" một cách an toàn mà không bị dịch sang SQL.
-    var recentOrdersForShop = intermediateData.Select(g => new RecentOrderResponse
-    {
-        OrderId = g.Id,
-        CustomerName = g.FullName ?? "N/A", // <-- Logic này được C# xử lý
-        OrderDate = g.CreatedAt,
-        TotalAmount = g.TotalAmount,
-        Status = g.Status
-    });
+            // 2. Bây giờ, dữ liệu đã ở trong C#. Chúng ta dùng LINQ-to-Objects
+            //    để áp dụng logic "??" một cách an toàn mà không bị dịch sang SQL.
+            var recentOrdersForShop = intermediateData.Select(g => new RecentOrderResponse
+            {
+                OrderId = g.Id,
+                CustomerName = g.FullName ?? "N/A", // <-- Logic này được C# xử lý
+                OrderDate = g.CreatedAt,
+                TotalAmount = g.TotalAmount,
+                Status = g.Status
+            });
 
-    return recentOrdersForShop;
-}
+            return recentOrdersForShop;
+        }
     }
 }
