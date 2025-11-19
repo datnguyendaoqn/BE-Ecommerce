@@ -206,7 +206,7 @@ namespace BackendEcommerce.Infrastructure.Persistence.Repositories
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    PrimaryImageUrl = _context.Media.FirstOrDefault(m=>m.EntityId==p.Id).ImageUrl, 
+                    PrimaryImageUrl = _context.Media.FirstOrDefault(m => m.EntityId == p.Id && m.EntityType == "product").ImageUrl ?? "ko co anh", 
                     MinPrice = p.MinPrice, 
                     AverageRating = p.AverageRating,
                     ReviewCount = p.ReviewCount,

@@ -976,8 +976,6 @@ namespace BackendEcommerce.Application.Features.Products
                     productId,5
                 );
 
-                // Chờ cả 2 query chạy xong
-
                 // 3. Đóng gói DTO trả về
                 var responseDto = new RelatedProductsResponseDto
                 {
